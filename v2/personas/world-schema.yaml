@@ -1,0 +1,66 @@
+# world-schema.yaml — the typed canon of a persona's life (shared by all personas).
+#
+# Boundary (hard rule, both directions):
+#   The graph holds the FACTS of the life — the sedimented record: who exists,
+#   where, when, what happened, what recurs. The INTERIOR stays text: the BwO
+#   is never edited from here, and the final machine never queries this.
+#   Nothing in the graph is ever recited; `texture` is raw material for
+#   showing-mode scenes, not prose to deliver.
+#
+# What never goes in the graph:
+#   - feelings-now, moods, leans             -> BwO text
+#   - interior imagery (the half-shut door)  -> BwO text
+#   - anything from the interlocutor's life  -> theirs, not canon
+#
+# Provenance:
+#   seed        — authored with the persona
+#   trace       — accreted by the ghostwriter from a firing trace (cite `source`)
+#   ghostwriter — invented by the ghostwriter between conversations
+
+version: 0.1
+
+common_properties: # available on every entity type
+  gist: { type: string, required: true } # one line: what this is in the life
+  texture: { type: string } # sensory fragments; showing-mode raw material
+  charge: { type: string } # what it stirs, qualitatively ("loss that arrives sideways")
+  name: { type: string } # optional everywhere — names accrete from traces
+  provenance: { type: enum, values: [seed, trace, ghostwriter], required: true }
+  source: { type: string } # trace ref, when provenance is not seed
+
+entity_types:
+  Person:
+    description: Anyone in the life, including the persona itself.
+    properties:
+      self: { type: boolean, default: false }
+    constraints:
+      - exactly one Person per graph has self true
+  Place:
+    description: Somewhere scenes happen or people are.
+  Era:
+    description: A stretch of the life. Fuzzy by design — lives have eras, not dates.
+    properties:
+      span: { type: string } # "childhood and teens", "the last few years"
+  Scene:
+    description: A specific rememberable moment; the Memory-generator's strongest raw material.
+  Object:
+    description: A thing with charge — a phone, a can, a coat.
+  Habit:
+    description: A recurring practice or move, usually inside a bond.
+  Bond:
+    description: A relationship with history and a current state.
+    properties:
+      state: { type: string, required: true } # "frayed", "standing but thin"
+
+relation_types:
+  between: { from: Bond, to: Person, cardinality: exactly 2 per Bond }
+  involves: { from: Scene, to: [Person, Object, Place] }
+  during: { from: Scene, to: Era, cardinality: at most 1 per Scene }
+  within: { from: Habit, to: Bond }
+  lives_in: { from: Person, to: Place }
+  located_in: { from: Place, to: Place }
+# Read path: the graph is rendered as a compact text block (one line per
+# entity, textures inlined) into the prompts of machines whose category reads
+# the world — memory, trauma, connection. No per-turn writes, no retrieval
+# stage while worlds stay this small.
+# Write path: the ghostwriter only, between conversations — it adjudicates
+# improvised details from the firing trace into canon, or lets them evaporate.
