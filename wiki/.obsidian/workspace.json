@@ -1,0 +1,240 @@
+{
+  "main": {
+    "id": "2632fcfc94bad2c5",
+    "type": "split",
+    "children": [
+      {
+        "id": "9b97e3e7943e380d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "feddf53016f05042",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "theory/eros-and-will-to-power.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "eros-and-will-to-power"
+            }
+          },
+          {
+            "id": "9a073b2f4a6adbb8",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "development/desiring-machines-redesign-sketch.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "desiring-machines-redesign-sketch"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7e8d4e329258159b",
+    "type": "split",
+    "children": [
+      {
+        "id": "dfc0697eea533a62",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d1e249f1701769e7",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "9864841ff0d5f0b5",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "kruse",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "d14e084705bbfeb8",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "aacdf3d62054c2c1",
+    "type": "split",
+    "children": [
+      {
+        "id": "a93318d9b88b55d9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d4f6264eee8f35a0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "theory/ecosophy.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for ecosophy"
+            }
+          },
+          {
+            "id": "bf67547b5f3473fc",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "theory/ecosophy.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from ecosophy"
+            }
+          },
+          {
+            "id": "a9c7ab3524e7d912",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "06745fade14c6619",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "6ca6acd60c37cc12",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "theory/ecosophy.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of ecosophy"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "9a073b2f4a6adbb8",
+  "lastOpenFiles": [
+    "development/desiring-machines-design-sheet.md",
+    "development/desiring-machines-redesign-sketch.md",
+    "development/persona-system-improvements.md",
+    "development/desiring-machines-core-spec.md",
+    "development/desiring-machines-design-notes.md",
+    "raw/Personas_as_Evaluation_Instruments_for_Agentic_Systems.pdf",
+    "raw/forms_of_vitality.pdf",
+    "theory/greek-romance.md",
+    "theory/face-and-landscape.md",
+    "theory/the-beetle-in-the-box.md",
+    "theory/narrator-and-witness.md",
+    "theory/bergson.md",
+    "theory/perspicuous-representation.md",
+    "theory/virtual-actual.md",
+    "theory/protention-as-order-parameter.md",
+    "theory/idyll.md",
+    "theory/smooth-and-striated.md",
+    "theory/nomadism.md",
+    "theory/cognitivism.md",
+    "theory/rabelaisian-chronotope.md",
+    "theory/plane-of-immanence.md",
+    "theory/becoming-imperceptible.md",
+    "theory/classless-intelligentsia-diagnosis.md",
+    "theory/monologism.md",
+    "theory/duration.md",
+    "theory/contingency-of-the-signifier.md",
+    "theory/not-dialectic.md",
+    "theory/novelization.md",
+    "raw/psychological_types.pdf",
+    "raw/Vol-6-psychological-types.pdf",
+    "theory/pain-behaviour.md.tmp.40758.1776530249800",
+    "raw/seminar_XXIII.pdf",
+    "raw/shame_and_its_sisters.pdf",
+    "raw/seminar_XI.pdf",
+    "raw/the_visible_and_the_invisible.pdf",
+    "raw/ecrits.pdf"
+  ]
+}
