@@ -24,8 +24,15 @@ class ConvState:
         for n in names:
             self.fire_count[n] = self.fire_count.get(n, 0) + 1
 
+    # Prompt-facing speaker labels. "user"/"assistant" vocabulary is banned
+    # here — it pulls the models into the assistant frame and blurs who is
+    # speaking. The other person is exactly that; the persona is the persona.
+    _LABELS = {"user": "the other person", "persona": "the persona"}
+
     def history_text(self, window: int) -> str:
         if not self.history:
-            return "(Start of conversation.)"
+            return "(Start of conversation. The other person is a stranger; no one has spoken yet.)"
         recent = self.history[-window * 2 :]
-        return "\n".join(f"[{m['role']}] {m['content']}" for m in recent)
+        return "\n".join(
+            f"[{self._LABELS.get(m['role'], m['role'])}] {m['content']}" for m in recent
+        )

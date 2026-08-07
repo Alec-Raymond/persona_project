@@ -48,10 +48,14 @@ class Machine:
         return f"- {self.name} [{self.category}/{tag}]: {self.sensitivity.strip()}"
 
     def spec(self) -> str:
-        """Full spec for the machine's own firing prompt."""
+        """Full spec for the machine's own firing prompt.
+
+        Category and shape are deliberately absent: the category enters the
+        prompt as its guidance block (prompts.CATEGORY_GUIDANCE), and shape is
+        pipeline metadata a firing machine has no use for.
+        """
         parts = [
             f"Machine: {self.name}",
-            f"Category: {self.category}   Shape: {self.shape}",
             f"Sensitivity (what you latch onto): {self.sensitivity.strip()}",
             f"Flow (what you produce when you fire): {self.flow.strip()}",
         ]
