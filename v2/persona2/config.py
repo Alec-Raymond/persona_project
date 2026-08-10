@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 # --- Model tiers (exact API IDs) ---
 CHEAP = "claude-haiku-4-5-20251001"  # selectors, per-machine calls — narrow work
-MID = "claude-sonnet-4-6"       # group synthesizers — mode-choice + synthesis
+MID = "claude-sonnet-5"         # group synthesizers — mode-choice + synthesis
 TOP = "claude-opus-4-8"         # final machine — most context, the response
 
 # The four group-synthesis modes. Transcendent function is pairs-only.
@@ -43,9 +43,12 @@ class Config:
 
     # --- llm call shape ---
     selector_max_tokens: int = 700
-    machine_max_tokens: int = 350
-    synth_max_tokens: int = 900
-    final_max_tokens: int = 1200
+    machine_max_tokens: int = 1000   # ANALYSIS (~100w) + PRODUCT (~250w)
+    synth_max_tokens: int = 1600     # thinking (~100w) + result (250w+), JSON
+    final_max_tokens: int = 4200     # thinking (500w) + surface (500w) + edits + reply + justification
+    response_max_tokens: int = 600   # armor + redraft calls (the spoken reply)
+    fit_max_tokens: int = 700        # blind fit-check verdicts
+    fit_max_rounds: int = 2          # max redraft rounds after a failed fit
     concurrency: int = 8       # max simultaneous LLM calls (semaphore)
 
     # temperatures
