@@ -101,8 +101,12 @@ def _inspect(args: argparse.Namespace) -> None:
         response=data["response"],
         bwo_before=data["bwo_before"],
         bwo_after=data["bwo_after"],
+        draft_response=data.get("draft_response", ""),
+        justification=data.get("justification", ""),
+        fit_reviews=data.get("fit_reviews", []),
         fired=[tuple(x) for x in data["fired"]],
         machine_outputs=data["machine_outputs"],
+        edits=data.get("edits", []),
         relevance_picks=[tuple(x) for x in data["relevance_picks"]],
         random_picks=data["random_picks"],
         selection_scores=data["selection_scores"],
@@ -131,11 +135,31 @@ def main(argv: list[str] | None = None) -> int:
     pi = sub.add_parser("inspect", help="render a saved trace JSON")
     pi.add_argument("trace")
 
+    pl = sub.add_parser("live", help="serve the live frontend (chat in the browser)")
+    pl.add_argument("persona", nargs="?", default=str(_default_persona()))
+    pl.add_argument("--all", choices=list(_TIERS), help="set ALL stage models to this tier")
+    pl.add_argument("--final", choices=list(_TIERS), help="final-stage model tier")
+    pl.add_argument("--port", type=int, default=8765)
+    pl.add_argument("--concurrency", type=int, default=None)
+    pl.add_argument("--no-browser", action="store_true")
+
     args = parser.parse_args(argv)
     if args.cmd == "chat":
         asyncio.run(_chat(args))
     elif args.cmd == "inspect":
         _inspect(args)
+    elif args.cmd == "live":
+        from .live import serve
+
+        cfg = Config()
+        if args.all:
+            tier = _TIERS[args.all]
+            cfg.model_selector = cfg.model_machine = cfg.model_synth = cfg.model_final = tier
+        if args.final:
+            cfg.model_final = _TIERS[args.final]
+        if args.concurrency:
+            cfg.concurrency = args.concurrency
+        serve(args.persona, cfg, port=args.port, open_browser=not args.no_browser)
     return 0
 
 
