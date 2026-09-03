@@ -24,3 +24,6 @@ wiki/.obsidian/
 # Raw source binaries — keep markdown ingests, drop PDFs/HTML/large dumps
 wiki/raw/*
 !wiki/raw/*.md
+.claude/
+persona/
+wiki/raw/
