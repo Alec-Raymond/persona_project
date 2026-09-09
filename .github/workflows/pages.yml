@@ -1,0 +1,61 @@
+name: Publish conversations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'replay-site/**'
+      - 'viewer/live.html'
+      - 'persona2/live.py'
+      - 'tests/test_replay_parity.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: replay-site
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: replay-site/package-lock.json
+      - uses: actions/configure-pages@v5
+        id: pages
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e '.[dev]'
+        working-directory: .
+      - run: python -m pytest -q
+        working-directory: .
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: replay-site/dist/client
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

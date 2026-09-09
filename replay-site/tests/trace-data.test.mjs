@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readRun } from '../lib/trace-data.ts';
+import { readRun } from '../lib/trace-data.mjs';
 
 function sample() {
   return { format: 'persona-trace-run-v1', id: 'example', title: 'Example', persona: 'effusive', model: 'gpt-6-astra',

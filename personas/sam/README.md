@@ -1,4 +1,4 @@
-# Combined persona
+# Sam
 
 The sole active persona and CLI default. Its roster contains every distinct
 machine from the two V2 personas, with each name included once.
@@ -15,13 +15,14 @@ the pool each turn, alongside the four always-on machines.
 
 Shared names use the definitions from
 [Effusive](../../wiki/archive/personas/effusive/manifest.yaml). This preserves its
-machine behavior and always-on settings. The new persona also keeps Effusive's
-voice, initial state, and waiting-area setting.
+machine behavior and always-on settings. Sam keeps the existing voice, initial
+state, and conversation setting. The interface uses Sam's name and omits the
+staged introduction.
 
 [Testbed](../../wiki/archive/personas/testbed/manifest.yaml) supplies Shame,
 Longing, and Withhold. Their sensitivity and output instructions remain intact.
 Longing's calibration refers to distant friends and missed gatherings, matching
-the existing initial state. Withhold's calibration makes reserve a response to
+Sam's initial state. Withhold's calibration makes reserve a response to
 pressure after openness, instead of the character's usual manner. The voice
 instructions describe that shift.
 

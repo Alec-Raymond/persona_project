@@ -434,4 +434,4 @@ are complete and is what's actually running.
 | Group synthesis call | `persona2/synthesis.py` |
 | Structured-output schemas | `persona2/models.py` |
 | Tunable knobs / model tiers | `persona2/config.py` |
-| The persona used in this historical walkthrough | `wiki/archive/personas/testbed/` (`manifest.yaml`, `voice.md`, `bwo_seed.txt`); the current default is `personas/combined/` |
+| The persona used in this historical walkthrough | `wiki/archive/personas/testbed/` (`manifest.yaml`, `voice.md`, `bwo_seed.txt`); the current default is `personas/sam/` |

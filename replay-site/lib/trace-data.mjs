@@ -1,38 +1,6 @@
-export type ModelCall = {
-  model: string;
-  stage?: string;
-  label?: string;
-  [key: string]: unknown;
-};
-
-export type Turn = {
-  input_text: string;
-  response: string;
-  bwo_before: string;
-  bwo_after: string;
-  calls: ModelCall[];
-  fired?: unknown[];
-  machine_outputs?: Record<string, unknown>;
-  groups?: unknown[];
-  edits?: unknown[];
-  fit_reviews?: unknown[];
-  draft_response?: string;
-  totals?: { elapsed_s?: number; [key: string]: unknown };
-  [key: string]: unknown;
-};
-
-export type Run = {
-  format: 'persona-trace-run-v1';
-  id: string;
-  title: string;
-  persona: string;
-  model: 'gpt-6-astra';
-  turns: Turn[];
-};
-
-export function readRun(value: unknown): Run {
+export function readRun(value) {
   if (!value || typeof value !== 'object') throw new Error('Choose an exported conversation JSON file.');
-  const run = value as Run;
+  const run = value;
   if (run.format !== 'persona-trace-run-v1' || typeof run.id !== 'string' ||
       typeof run.title !== 'string' || typeof run.persona !== 'string') {
     throw new Error('Choose a conversation exported from the local chat.');

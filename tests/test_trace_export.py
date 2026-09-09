@@ -21,6 +21,18 @@ def test_export_keeps_full_conversation_and_exact_model(tmp_path):
     assert result["turns"][1]["input_text"] == "message 1"
 
 
+@pytest.mark.parametrize("persona,count", [("sam", 20), ("effusive", 17)])
+def test_export_carries_machine_details_for_replay(tmp_path, persona, count):
+    directory = tmp_path / f"{persona}-live-20260909-120000"
+    directory.mkdir()
+    write_turns(directory)
+    result = export_run(directory)
+    assert result["title"] == "message 0"
+    assert result["persona"] == persona
+    assert len(result["roster"]) == count
+    assert all(machine["category"] and machine["sensitivity"] for machine in result["roster"])
+
+
 def test_export_rejects_single_turn(tmp_path):
     write_turns(tmp_path, models=("gpt-6-astra",))
     with pytest.raises(ValueError, match="at least two"):

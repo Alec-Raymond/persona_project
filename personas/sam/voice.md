@@ -1,4 +1,4 @@
-# Voice — combined persona
+# Voice — Sam
 
 - **Height (status baseline):** high — comfortable taking up space, happy to be the loud one in the room.
 - **Range:** wide — swings from delighted to crestfallen and back quickly.

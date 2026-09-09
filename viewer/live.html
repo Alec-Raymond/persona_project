@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>persona2 — live</title>
+<title>Sam · Conversation</title>
 <style>
 :root{
   --bg:#faf8f2; --card:#fff; --line:#e2ded4; --ink:#26221a; --muted:#8a8271;
@@ -118,21 +118,20 @@ details.compact>summary{cursor:pointer;color:var(--muted);font-size:11px;
 <body>
 <div id="chat">
   <header>
-    <h1>persona2 <span id="pname" class="chip"></span></h1>
-    <div id="situation"></div>
+    <h1 id="pname">Sam</h1>
     <div id="modelInfo"></div>
   </header>
   <div id="bar">
-    <button id="newBtn">new conversation</button>
+    <button id="newBtn">New chat</button>
     <select id="traceSel"><option>loading…</option></select>
-    <button id="replayBtn">replay</button>
+    <button id="replayBtn">Replay</button>
     <button id="exportBtn" title="Save this conversation for the replay website">Export conversation</button>
   </div>
   <div id="transcript"></div>
   <div id="status"></div>
   <div id="composer">
-    <textarea id="input" placeholder="Say something…"></textarea>
-    <button id="send">send</button>
+    <textarea id="input" placeholder="Message Sam"></textarea>
+    <button id="send">Send</button>
   </div>
 </div>
 <div id="pipe"></div>
@@ -141,7 +140,7 @@ details.compact>summary{cursor:pointer;color:var(--muted);font-size:11px;
 "use strict";
 const $ = s => document.querySelector(s);
 const pipe = $("#pipe");
-let personaName = "persona";
+let personaName = "Sam";
 
 /* Presentation names and descriptions — what each step does in general. */
 const STAGES = {
@@ -295,7 +294,7 @@ function resetTurn(inputText, replay){
   document.body.classList.remove("done-dim");
   addMsg("you", inputText);
   setBusy(true);
-  setStatus(replay ? "replaying…" : "the persona is thinking…");
+  setStatus(replay ? "Replaying…" : "Writing a reply…");
 }
 
 const handlers = {
@@ -525,11 +524,12 @@ es.onmessage = e => {
   (handlers[ev.type] || (() => {}))(ev);
 };
 fetch("/info").then(r => r.json()).then(i => {
-  personaName = i.persona;
-  $("#pname").textContent = i.persona;
-  $("#situation").textContent = i.situation;
+  personaName = i.persona.charAt(0).toUpperCase() + i.persona.slice(1);
+  $("#pname").textContent = personaName;
+  $("#input").placeholder = "Message " + personaName;
+  document.title = personaName + " · Conversation";
   $("#modelInfo").textContent = i.models
-    ? `${i.backend} · ${[...new Set(Object.values(i.models))].join(" / ")}` : "";
+    ? [...new Set(Object.values(i.models))].map(model => model === "gpt-6-astra" ? "Astra" : model).join(" / ") : "";
   setBusy(i.busy);
 });
 function loadTraces(){

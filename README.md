@@ -11,7 +11,7 @@ Each reply passes through several model calls. They select relevant prompts, com
 - Watch the pipeline run in the browser, or replay a saved trace.
 - Inspect past runs as JSON or standalone HTML reports without making model calls.
 
-`combined` is the sole active persona and the CLI default. It contains all 20 distinct V2 machines from Effusive and Testbed: four always-on and sixteen in the selection pool. It keeps Effusive's shared machine definitions and adds Shame, Longing, and Withhold. See the [persona definition](personas/combined/README.md) for its voice and merge choices. Both source personas remain in the [wiki archive](wiki/archive/README.md).
+**Sam** is the sole active persona and the CLI default. It contains all 20 distinct V2 machines from Effusive and Testbed: four always-on and sixteen in the selection pool. It keeps Effusive's shared machine definitions and adds Shame, Longing, and Withhold. See the [persona definition](personas/sam/README.md) for its voice and merge choices. Both source personas remain in the [wiki archive](wiki/archive/README.md).
 
 The [development status note](wiki/development/status-2026-09-09.md) separates the working prototype from the larger design proposals.
 
@@ -68,13 +68,13 @@ SDK temperature, token-limit, and cache settings apply only to the Anthropic bac
 
 ## Inspect an existing run
 
-The [replay website](https://persona-traces.jjraymond-ai.chatgpt.site) opens exported multi-turn Astra conversations. The site is private to its owner. Selected published conversations will appear in its picker; the initial collection is empty.
+The [Conversations website](https://alec-raymond.github.io/persona_project/) runs on GitHub Pages from this repository. It replays exported multi-turn Astra conversations. The published collection starts empty for your own recordings. Live chats run locally.
 
 1. Chat in the local browser interface for at least two turns.
 2. Click **Export conversation** when the turn finishes.
-3. Open the JSON file with **Open conversation** on the replay website.
+3. Open the JSON file with **Open file** on the replay website.
 
-The website reads opened files in the browser without uploading them. It shows the transcript, machine outputs, syntheses, state changes, and recorded calls. Exports require Astra for every call and continuous state across turns. See [replay-site/README.md](replay-site/README.md) to select conversations for publication.
+The website reads opened files in the browser without uploading them. It shows the transcript, parallel machine streams, animated grouping, syntheses, state changes, drafts, and fit reviews. The exported JSON retains the full recorded calls. Exports require Astra for every call and continuous state across turns. See [replay-site/README.md](replay-site/README.md) to select conversations for publication.
 
 After installing the project, these commands work without model credentials:
 
@@ -117,7 +117,7 @@ A persona directory contains:
 | `manifest.yaml` | Machine tasks, selection criteria, and always-on flags. |
 | `voice.md` | Instructions for how the character speaks. |
 | `bwo_seed.txt` | Initial character state for a new conversation. |
-| `situation.txt` | Optional setting; otherwise the runtime uses a public waiting-place scenario. |
+| `situation.txt` | Optional setting; otherwise the loader supplies a default setting. |
 
 Copy an existing directory under `personas/`, edit its files, and pass its path to `persona2 chat` or `persona2 live`. The world schema and sample graph are design material; the current persona loader does not consume them.
 
@@ -125,7 +125,7 @@ Copy an existing directory under `personas/`, edit its files, and pass its path 
 
 ```text
 persona2/       Python package, runtime, prompts, and CLI
-personas/       Combined persona with all 20 V2 machines
+personas/       Sam, with all 20 V2 machines
 tests/          Automated tests that do not call models
 viewer/         Live frontend, report builder, and generated HTML reports
 replay-site/    Hosted viewer for selected multi-turn Astra conversations

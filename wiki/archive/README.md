@@ -18,6 +18,6 @@ Earlier project material, preserved for reference. Return to the [wiki guide](..
 
 The local V1 prototype now lives at `wiki/archive/persona/`. It retains its separate Git history and remains excluded from this repository, as before. Its upstream repository is [Alec-Raymond/persona](https://github.com/Alec-Raymond/persona).
 
-The [Combined persona](../../personas/combined/README.md) is the sole active persona. It contains all 20 distinct machines from Effusive and Testbed.
+The [Sam](../../personas/sam/README.md) is the sole active persona. It contains all 20 distinct machines from Effusive and Testbed.
 
 The [active runtime](../../README.md) lives at the repository root. Design-search records are indexed [separately](../design_search/README.md).

@@ -1,5 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises';
-import { readRun } from '../lib/trace-data.ts';
+import { readRun } from '../lib/trace-data.mjs';
 
 const directory = new URL('../public/selected/', import.meta.url);
 const selected = JSON.parse(await readFile(new URL('index.json', directory), 'utf8'));

@@ -9,6 +9,8 @@ import argparse
 import json
 from pathlib import Path
 
+from .machine import load_machines
+
 
 def export_run(directory: Path, *, title: str | None = None) -> dict:
     files = sorted(directory.glob("turn-*.json"))
@@ -21,11 +23,24 @@ def export_run(directory: Path, *, title: str | None = None) -> dict:
             raise ValueError(f"Turn {index + 1} must use gpt-6-astra for every recorded call.")
         if index and turn["bwo_before"] != turns[index - 1]["bwo_after"]:
             raise ValueError(f"Turn {index + 1} does not continue the previous turn's state.")
+    opening = " ".join(turns[0]["input_text"].split())
+    default_title = opening[:72] + ("…" if len(opening) > 72 else "")
+    persona = directory.name.rsplit("-", 2)[0].removesuffix("-live")
+    root = Path(__file__).resolve().parent.parent
+    roster = []
+    for base in (root / "personas", root / "wiki" / "archive" / "personas"):
+        manifest = base / persona / "manifest.yaml"
+        if manifest.is_file():
+            roster = [{"name": machine.name, "category": machine.category,
+                       "sensitivity": machine.sensitivity.strip()}
+                      for machine in load_machines(manifest)]
+            break
     return {
         "format": "persona-trace-run-v1",
         "id": directory.name,
-        "title": title or directory.name,
-        "persona": directory.name.split("-")[0],
+        "title": title or default_title or "Conversation",
+        "persona": persona,
+        "roster": roster,
         "model": "gpt-6-astra",
         "turns": turns,
     }
