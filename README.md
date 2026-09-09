@@ -11,7 +11,7 @@ Each reply passes through several model calls. They select relevant prompts, com
 - Watch the pipeline run in the browser, or replay a saved trace.
 - Inspect past runs as JSON or standalone HTML reports without making model calls.
 
-Two example personas are included: `testbed` for checking the pipeline and `effusive` for trying a more expressive character.
+`effusive` is the sole active persona and the CLI default. Its roster contains 17 machines: four always-on and thirteen selected by relevance or variation. The earlier Testbed persona is preserved in the [wiki archive](wiki/archive/personas/testbed).
 
 The [development status note](wiki/development/status-2026-09-09.md) separates the working prototype from the larger design proposals.
 
@@ -60,7 +60,9 @@ Use `--model` to set every stage or `--final` to override the final stage. Both 
 
 Codex uses `--reasoning medium` and a 300-second timeout per call by default. Change these with `--reasoning` and `--call-timeout`. `--concurrency` controls how many model calls can run at once. Model defaults and pipeline settings live in [config.py](persona2/config.py).
 
-The Codex backend runs each stage in a fresh temporary session and validates structured responses against the pipeline's schemas. It requests a replacement base prompt, skips personal configuration, and disables coding tools. This still uses the Codex agent runner. Prompt isolation is not verified: a separate CLI prompt audit still renders skills and agent instructions. Recorded traces contain the application's prompts, not a complete dump of Codex's model context. The browser receives each call's text when that call completes.
+The Codex backend runs each stage in a fresh temporary session and validates structured responses against the pipeline's schemas. It removes coding instructions, tools, skills, and global `AGENTS.md` context. An audit of real outgoing Astra requests confirms exactly the stage prompt and stage input, with zero tools. Both plain-text and structured-output requests pass. See the [verification report and reproduction steps](docs/codex-backend.md).
+
+Recorded traces contain the application's prompts and returned outputs. Older traces can come from the earlier adapter, which still included Codex context. The browser receives each call's text when that call completes.
 
 SDK temperature, token-limit, and cache settings apply only to the Anthropic backend. CLI backends use their own generation settings. A Codex login, model-access, or usage-limit error stops the turn; the app does not switch to a paid API backend.
 
@@ -123,7 +125,7 @@ Copy an existing directory under `personas/`, edit its files, and pass its path 
 
 ```text
 persona2/       Python package, runtime, prompts, and CLI
-personas/       Example persona definitions
+personas/       Effusive persona definition
 tests/          Automated tests that do not call models
 viewer/         Live frontend, report builder, and generated HTML reports
 replay-site/    Hosted viewer for selected multi-turn Astra conversations

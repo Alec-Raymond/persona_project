@@ -28,7 +28,8 @@ python -m persona2.trace_export traces/<run> conversation.json --title "Conversa
 The exporter and browser require at least two turns, `gpt-6-astra` on every
 recorded call, and continuous character state between turns. Traces record
 application prompts and returned outputs; they do not capture Codex's entire
-model context. The current subscription backend's prompt isolation is unverified.
+model context. The current subscription backend passes an
+[outgoing-request audit](../docs/codex-backend.md); older traces can predate that fix.
 
 ## Local development
 

@@ -39,8 +39,10 @@ def load_run(run_dir: Path) -> tuple[list[dict], dict, str]:
     if not turns:
         sys.exit(f"no turn-*.json files in {run_dir}")
 
-    persona_name = run_dir.name.rsplit("-", 2)[0]
+    persona_name = run_dir.name.rsplit("-", 2)[0].removesuffix("-live")
     manifest_path = run_dir.parent.parent / "personas" / persona_name / "manifest.yaml"
+    if not manifest_path.exists():
+        manifest_path = run_dir.parent.parent / "wiki" / "archive" / "personas" / persona_name / "manifest.yaml"
     manifest = yaml.safe_load(manifest_path.read_text()) if manifest_path.exists() else {"machines": []}
     return turns, manifest, persona_name
 

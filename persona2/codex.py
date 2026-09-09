@@ -7,11 +7,57 @@ import copy
 import json
 import os
 import shutil
+import subprocess
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
+
+
+def tool_free_model(model: dict) -> dict:
+    """Remove model-catalog tool defaults that override CLI feature switches."""
+    result = copy.deepcopy(model)
+    result.update({
+        "base_instructions": "",
+        "model_messages": None,
+        "apply_patch_tool_type": None,
+        "experimental_supported_tools": [],
+        "supports_search_tool": False,
+        "node_repl_disabled": True,
+        "tool_mode": "direct",
+    })
+    return result
+
+
+@lru_cache(maxsize=8)
+def model_catalog(binary: str, model: str) -> dict:
+    """Read native model capabilities; keep reasoning/context limits intact."""
+    result = subprocess.run([binary, "debug", "models"], capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        raise RuntimeError(f"Cannot read the Codex model catalog: {result.stderr[:500]}")
+    models = json.loads(result.stdout).get("models", [])
+    info = next((item for item in models if item.get("slug") == model), None)
+    if info is None:
+        raise RuntimeError(f"Model {model} is absent from the Codex catalog.")
+    return {"models": [tool_free_model(info)]}
+
+
+def isolated_home(root: Path) -> Path:
+    """Give this child process no global instructions, with native login reuse.
+
+    Codex reads its own login file through a symlink. Python never reads or
+    copies credentials. The parent process's home/configuration is unchanged.
+    """
+    native_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
+    auth = native_home / "auth.json"
+    if not auth.is_file():
+        raise RuntimeError("Codex file-based ChatGPT login is missing. Run `codex login` with ChatGPT.")
+    child_home = root / "codex-home"
+    child_home.mkdir(mode=0o700)
+    (child_home / "auth.json").symlink_to(auth.resolve())
+    return child_home
 
 
 def strict_schema(schema: dict) -> dict:
@@ -85,6 +131,9 @@ async def generate(
         root = Path(directory)
         instructions = root / "instructions.txt"
         instructions.write_text(system, encoding="utf-8")
+        catalog = root / "models.json"
+        catalog.write_text(json.dumps(await asyncio.to_thread(model_catalog, binary, model)))
+        child_home = isolated_home(root)
         command = [
             binary, "exec", "--ignore-user-config", "--ephemeral",
             "--skip-git-repo-check", "--sandbox", "read-only", "--cd", directory,
@@ -94,7 +143,30 @@ async def generate(
             "forced_login_method": "chatgpt",
             "model_reasoning_effort": reasoning_effort,
             "model_instructions_file": str(instructions),
+            "model_catalog_json": str(catalog),
             "project_doc_max_bytes": 0,
+            "skills.include_instructions": False,
+            "skills.bundled.enabled": False,
+            "orchestrator.skills.enabled": False,
+            "orchestrator.mcp.enabled": False,
+            "agents.enabled": False,
+            "include_apps_instructions": False,
+            "include_collaboration_mode_instructions": False,
+            "include_environment_context": False,
+            "include_permissions_instructions": False,
+            "features.multi_agent_v2": False,
+            "features.code_mode": False,
+            "features.code_mode_host": False,
+            "features.code_mode_only": False,
+            "features.skill_search": False,
+            "features.skip_host_skill_discovery": True,
+            "features.goals": False,
+            "features.sleep_tool": False,
+            "features.view_image": False,
+            "tools.experimental_request_user_input.enabled": False,
+            "tools.update_plan.enabled": False,
+            "developer_instructions": "",
+            "instructions": "",
             "web_search": "disabled",
             "features.shell_tool": False,
             "features.unified_exec": False,
@@ -116,8 +188,11 @@ async def generate(
         command.append("-")  # Send the input through stdin, not shell arguments.
         env = {
             key: value for key, value in os.environ.items()
-            if key not in {"OPENAI_API_KEY", "CODEX_API_KEY", "ANTHROPIC_API_KEY", "CODEX_THREAD_ID"}
+            if key not in {"OPENAI_API_KEY", "CODEX_API_KEY", "ANTHROPIC_API_KEY", "CODEX_THREAD_ID", "CODEX_SESSION_ID"}
         }
+        # Configure Codex's state directory only in the child's environment.
+        # project_doc_max_bytes does not suppress the global AGENTS.md.
+        env["CODEX_HOME"] = str(child_home)
         proc = await asyncio.create_subprocess_exec(
             *command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE, env=env,

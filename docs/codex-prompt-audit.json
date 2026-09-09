@@ -1,0 +1,109 @@
+{
+  "checked_at": "2026-09-09T21:58:10.918169+00:00",
+  "codex_version": "codex-cli 0.153.4",
+  "adapter_sha256": "303ed8f5f77c18d1fccf8e821f8e24c7cb8b0afd8bcff3836d80a86b8731991f",
+  "transport": "Loopback HTTP capture; no inference; request headers discarded",
+  "results": {
+    "plain": {
+      "model": "gpt-6-astra",
+      "clean": true,
+      "schema_matches": true,
+      "instructions": null,
+      "non_message_items": [
+        {
+          "type": "additional_tools",
+          "role": "developer",
+          "tools": []
+        }
+      ],
+      "messages": [
+        {
+          "role": "developer",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "PERSONA_AUDIT_SYSTEM_ONLY"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "PERSONA_AUDIT_USER_ONLY"
+            }
+          ]
+        }
+      ],
+      "tools": [],
+      "text": {
+        "verbosity": "low"
+      }
+    },
+    "structured": {
+      "model": "gpt-6-astra",
+      "clean": true,
+      "schema_matches": true,
+      "instructions": null,
+      "non_message_items": [
+        {
+          "type": "additional_tools",
+          "role": "developer",
+          "tools": []
+        }
+      ],
+      "messages": [
+        {
+          "role": "developer",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "PERSONA_AUDIT_SYSTEM_ONLY"
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "PERSONA_AUDIT_USER_ONLY"
+            }
+          ]
+        }
+      ],
+      "tools": [],
+      "text": {
+        "verbosity": "low",
+        "format": {
+          "type": "json_schema",
+          "strict": true,
+          "schema": {
+            "description": "A blind reader's verdict on whether a candidate reply fits the\nconversation \u2014 it sees only the situation, the exchange, and the reply.",
+            "properties": {
+              "explanation": {
+                "description": "Why the reply fits or does not fit, concretely: what a person in this situation would hear in it. Written before the verdict.",
+                "title": "Explanation",
+                "type": "string"
+              },
+              "fits": {
+                "description": "True if the reply is the kind of thing this person would plausibly say next, here; False otherwise.",
+                "title": "Fits",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "explanation",
+              "fits"
+            ],
+            "title": "FitCheck",
+            "type": "object",
+            "additionalProperties": false
+          },
+          "name": "codex_output_schema"
+        }
+      }
+    }
+  }
+}

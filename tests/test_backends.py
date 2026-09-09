@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import os
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -20,9 +21,17 @@ from persona2.trace import TurnTrace
 
 
 @pytest.fixture(autouse=True)
-def clean_backend_environment(monkeypatch):
+def clean_backend_environment(monkeypatch, tmp_path):
     monkeypatch.delenv("PERSONA2_BACKEND", raising=False)
     monkeypatch.delenv("PERSONA2_CLAUDE_CLI", raising=False)
+    native_home = tmp_path / "native-codex"
+    native_home.mkdir()
+    (native_home / "auth.json").write_text("{}")
+    (native_home / "AGENTS.md").write_text("GLOBAL_INSTRUCTIONS_MUST_NOT_LEAK")
+    monkeypatch.setenv("CODEX_HOME", str(native_home))
+    monkeypatch.setattr(codex, "model_catalog", lambda binary, model: {
+        "models": [codex.tool_free_model({"slug": model, "context_window": 272000})],
+    })
     events.set_sink(None)
     yield
     events.set_sink(None)
@@ -78,6 +87,25 @@ def test_structured_output_closes_nested_objects_and_preserves_original():
     assert converted["$defs"]["EditNote"]["additionalProperties"] is False
 
 
+def test_model_catalog_cannot_reenable_coding_tools():
+    native = {
+        "slug": ASTRA, "context_window": 272000,
+        "supported_reasoning_levels": [{"effort": "medium"}],
+        "tool_mode": "code_mode_only", "apply_patch_tool_type": "freeform",
+        "experimental_supported_tools": ["clock", "send_user_message_async"],
+        "base_instructions": "coding instructions", "model_messages": {"template": "coding"},
+    }
+    clean = codex.tool_free_model(native)
+    assert clean["tool_mode"] == "direct"
+    assert clean["apply_patch_tool_type"] is None
+    assert clean["experimental_supported_tools"] == []
+    assert clean["base_instructions"] == "" and clean["model_messages"] is None
+    assert clean["node_repl_disabled"]
+    assert clean["supported_reasoning_levels"] == native["supported_reasoning_levels"]
+    assert clean["context_window"] == native["context_window"]
+    assert native["tool_mode"] == "code_mode_only"
+
+
 @pytest.mark.asyncio
 async def test_relevance_votes_use_bare_roster_names(monkeypatch):
     import random
@@ -130,18 +158,29 @@ async def test_subscription_call_uses_stdin_and_native_schema(monkeypatch):
     process.returncode = 0
     process.communicate.return_value = (event_output(json.dumps(reply)), b"")
     paths = []
+    native_home = Path(os.environ["CODEX_HOME"])
 
     async def launch(*command, **kwargs):
         assert "--ignore-user-config" in command and "--ephemeral" in command
         assert command[command.index("--sandbox") + 1] == "read-only"
         assert 'forced_login_method="chatgpt"' in command
+        for setting in ("skills.include_instructions=false", "agents.enabled=false",
+                        "include_environment_context=false", "orchestrator.mcp.enabled=false"):
+            assert setting in command
         assert "--dangerously-bypass-approvals-and-sandbox" not in command
         assert "OPENAI_API_KEY" not in kwargs["env"] and "CODEX_API_KEY" not in kwargs["env"]
+        child_home = Path(kwargs["env"]["CODEX_HOME"])
+        assert child_home != native_home
+        assert list(child_home.iterdir()) == [child_home / "auth.json"]
+        assert (child_home / "auth.json").is_symlink()
+        assert (child_home / "auth.json").resolve() == native_home / "auth.json"
         assert "stage input" not in command
         schema_path = Path(command[command.index("--output-schema") + 1])
         paths.append(schema_path.parent)
         assert json.loads(schema_path.read_text())["additionalProperties"] is False
         assert (schema_path.parent / "instructions.txt").read_text() == "stage instructions"
+        catalog = json.loads((schema_path.parent / "models.json").read_text())
+        assert catalog["models"][0]["tool_mode"] == "direct"
         return process
 
     monkeypatch.setattr(codex.asyncio, "create_subprocess_exec", launch)
@@ -152,6 +191,13 @@ async def test_subscription_call_uses_stdin_and_native_schema(monkeypatch):
     assert usage == {"input_tokens": 100, "output_tokens": 8, "cache_read_input_tokens": 60}
     process.communicate.assert_awaited_once_with(b"stage input")
     assert not paths[0].exists()
+    assert Path(os.environ["CODEX_HOME"]) == native_home
+
+
+def test_missing_subscription_login_fails_before_launch(tmp_path):
+    (Path(os.environ["CODEX_HOME"]) / "auth.json").unlink()
+    with pytest.raises(RuntimeError, match="ChatGPT login is missing"):
+        codex.isolated_home(tmp_path)
 
 
 @pytest.mark.asyncio
@@ -248,7 +294,7 @@ async def test_concurrent_runtimes_keep_backend_and_trace_separate(monkeypatch):
     monkeypatch.setattr(codex, "generate", fake_codex)
     monkeypatch.setattr(llm, "_cli_call", fake_claude)
     monkeypatch.setattr("persona2.runtime.run_turn", fake_turn)
-    persona = load_persona(Path(__file__).resolve().parent.parent / "personas/testbed")
+    persona = load_persona(Path(__file__).resolve().parent.parent / "personas/effusive")
     captured = []
     events.set_sink(captured.append)
     runtimes = [Runtime.new(persona, Config(backend=name)) for name in ("codex", "claude")]

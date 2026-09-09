@@ -11,6 +11,7 @@ tags:
 
 Earlier project material, preserved for reference. Return to the [wiki guide](../README.md) for current research navigation.
 
+- [Testbed persona](personas/testbed/manifest.yaml): the earlier 16-machine V2 test persona, retained for historical trace inspection. Effusive is the sole active persona.
 - [ATP loose-threads scratch](atp-loose-threads-scratch.md): working research notes from *A Thousand Plateaus*.
 - [Original wiki system design](docs/superpowers/specs/2026-04-09-wiki-system-design.md): the April 2026 plan for the knowledge base. Its paths and implementation notes describe the earlier layout.
 

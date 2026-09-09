@@ -11,20 +11,22 @@ from pathlib import Path
 import pytest
 
 from persona2.config import Config
+from persona2.cli import _default_persona
 from persona2.grouping import allowed_modes, partition
 from persona2.machine import Machine, load_machines
 from persona2.models import BwoEdit, GroupSynthesis, RelevanceVotes
 from persona2.persona import load_persona
 from persona2.trace import GroupTrace, TurnTrace
 
-PERSONA = Path(__file__).resolve().parent.parent / "personas" / "testbed"
+PERSONA = Path(__file__).resolve().parent.parent / "personas" / "effusive"
 
 
 def test_persona_loads():
+    assert _default_persona() == PERSONA
     p = load_persona(PERSONA)
     assert len(p.machines) >= 8
-    assert len(p.always_on) == 3
-    assert {m.name for m in p.always_on} == {"Compensator", "Situation", "Pulsation"}
+    assert len(p.always_on) == 4
+    assert {m.name for m in p.always_on} == {"Compensator", "Situation", "Pulsation", "Laetitia"}
     assert p.voice_sketch and p.bwo_seed
     # all three shapes represented
     shapes = {m.shape for m in p.machines}
