@@ -18,19 +18,38 @@ from persona2.models import BwoEdit, GroupSynthesis, RelevanceVotes
 from persona2.persona import load_persona
 from persona2.trace import GroupTrace, TurnTrace
 
-PERSONA = Path(__file__).resolve().parent.parent / "personas" / "effusive"
+PERSONA = Path(__file__).resolve().parent.parent / "personas" / "combined"
 
 
 def test_persona_loads():
     assert _default_persona() == PERSONA
     p = load_persona(PERSONA)
-    assert len(p.machines) >= 8
+    assert len(p.machines) == 20
     assert len(p.always_on) == 4
     assert {m.name for m in p.always_on} == {"Compensator", "Situation", "Pulsation", "Laetitia"}
     assert p.voice_sketch and p.bwo_seed
     # all three shapes represented
     shapes = {m.shape for m in p.machines}
     assert shapes == {"analysis", "proposal", "modulation"}
+
+
+def test_combined_persona_contains_the_complete_v2_roster():
+    archive = PERSONA.parent.parent / "wiki" / "archive" / "personas"
+    sources = {name: load_persona(archive / name) for name in ("effusive", "testbed")}
+    expected = {m.name for p in sources.values() for m in p.machines}
+    combined = load_persona(PERSONA)
+    actual = {m.name: m for m in combined.machines}
+    assert len(actual) == len(combined.machines)  # No duplicate names hide a missing machine.
+    assert set(actual) == expected
+    assert len(combined.pool) == 16
+    assert {p.name for p in PERSONA.parent.iterdir() if p.is_dir()} == {"combined"}
+    # Keep the existing machine functions while changing two personal calibrations.
+    for source in sources["effusive"].machines:
+        assert actual[source.name] == source
+    for source in sources["testbed"].machines:
+        if source.name in {"Shame", "Longing", "Withhold"}:
+            assert actual[source.name].sensitivity == source.sensitivity
+            assert actual[source.name].flow == source.flow
 
 
 def test_machine_shape_validation():

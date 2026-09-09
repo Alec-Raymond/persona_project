@@ -6,7 +6,7 @@ The initial selected collection is empty, pending conversations recorded by Alec
 
 ## Open a conversation
 
-1. Run `persona2 live personas/effusive --backend codex` from the project root.
+1. Run `persona2 live --backend codex` from the project root. The default persona is `combined`.
 2. Submit at least two user messages in the local chat.
 3. Click **Export conversation** after the last turn finishes.
 4. Open the exported JSON on the replay page.

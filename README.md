@@ -11,7 +11,7 @@ Each reply passes through several model calls. They select relevant prompts, com
 - Watch the pipeline run in the browser, or replay a saved trace.
 - Inspect past runs as JSON or standalone HTML reports without making model calls.
 
-`effusive` is the sole active persona and the CLI default. Its roster contains 17 machines: four always-on and thirteen selected by relevance or variation. The earlier Testbed persona is preserved in the [wiki archive](wiki/archive/personas/testbed).
+`combined` is the sole active persona and the CLI default. It contains all 20 distinct V2 machines from Effusive and Testbed: four always-on and sixteen in the selection pool. It keeps Effusive's shared machine definitions and adds Shame, Longing, and Withhold. See the [persona definition](personas/combined/README.md) for its voice and merge choices. Both source personas remain in the [wiki archive](wiki/archive/README.md).
 
 The [development status note](wiki/development/status-2026-09-09.md) separates the working prototype from the larger design proposals.
 
@@ -31,7 +31,7 @@ To use your ChatGPT subscription, install the [Codex CLI](https://learn.chatgpt.
 
 ```bash
 codex login
-persona2 chat personas/effusive --backend codex
+persona2 chat --backend codex
 ```
 
 The Codex backend uses **Astra (`gpt-6-astra`) for every stage** by default. It uses your ChatGPT login and Codex allowance; no OpenAI API key is needed. See [Codex authentication](https://learn.chatgpt.com/docs/auth).
@@ -41,7 +41,7 @@ The command prints the full turn trace and saves JSON under `traces/`. Type `qui
 The browser interface shows each stage as it runs:
 
 ```bash
-persona2 live personas/effusive --backend codex
+persona2 live --backend codex
 ```
 
 Open <http://localhost:8765> if the browser does not open automatically. Each server run holds one conversation.
@@ -125,7 +125,7 @@ Copy an existing directory under `personas/`, edit its files, and pass its path 
 
 ```text
 persona2/       Python package, runtime, prompts, and CLI
-personas/       Effusive persona definition
+personas/       Combined persona with all 20 V2 machines
 tests/          Automated tests that do not call models
 viewer/         Live frontend, report builder, and generated HTML reports
 replay-site/    Hosted viewer for selected multi-turn Astra conversations
@@ -147,7 +147,7 @@ persona2 --help
 The tests cover persona loading, grouping, schemas, traces, backend selection, and Codex process handling. They mock model calls. To test a real conversation locally:
 
 ```bash
-persona2 chat personas/effusive --backend codex --quiet -m "Is this seat taken?"
+persona2 chat --backend codex --quiet
 ```
 
-The command uses your subscription and saves a trace under `traces/` for inspection.
+The command waits for your messages, uses your subscription, and saves traces under `traces/` for inspection.

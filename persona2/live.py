@@ -5,7 +5,7 @@ message endpoint, and trace replay. The pipeline runs on an asyncio loop in
 a background thread; persona2.events fans its events out to every connected
 browser. One conversation per server run.
 
-    python -m persona2.cli live personas/effusive --backend codex
+    python -m persona2.cli live --backend codex
 """
 
 from __future__ import annotations

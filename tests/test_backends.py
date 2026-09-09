@@ -294,7 +294,7 @@ async def test_concurrent_runtimes_keep_backend_and_trace_separate(monkeypatch):
     monkeypatch.setattr(codex, "generate", fake_codex)
     monkeypatch.setattr(llm, "_cli_call", fake_claude)
     monkeypatch.setattr("persona2.runtime.run_turn", fake_turn)
-    persona = load_persona(Path(__file__).resolve().parent.parent / "personas/effusive")
+    persona = load_persona(Path(__file__).resolve().parent.parent / "personas/combined")
     captured = []
     events.set_sink(captured.append)
     runtimes = [Runtime.new(persona, Config(backend=name)) for name in ("codex", "claude")]

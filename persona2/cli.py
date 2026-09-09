@@ -39,7 +39,7 @@ def _load_env() -> None:
 
 
 def _default_persona() -> Path:
-    return Path(__file__).resolve().parent.parent / "personas" / "effusive"
+    return Path(__file__).resolve().parent.parent / "personas" / "combined"
 
 
 def _model_arguments(parser: argparse.ArgumentParser) -> None:
