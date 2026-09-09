@@ -1,19 +1,17 @@
 # Persona Project
 
-An experimental Python runtime for conversational characters whose internal state changes through interaction.
+Persona Project runs conversations with configurable AI characters. It includes a Python runtime, a terminal interface, and a local browser interface.
 
-The project explores character as an ongoing process. Small, specialized LLM calls respond to the conversation and the character's current interior state. Their outputs combine, change that state, and shape what the character says next.
+Each reply passes through several model calls. They select relevant prompts, combine their outputs, update the character's state, and produce a reply. Saved traces show the inputs and outputs at each stage.
 
-The design draws on Deleuze and Guattari's *desiring machines*, alongside research on affect, memory, rhythm, and voice. The [research wiki](wiki/README.md) records those foundations and the design questions they raise.
+## What you can do
 
-## What is here
+- Chat with a character in the terminal or browser.
+- Configure its prompts, initial state, voice, and conversation setting.
+- Watch the pipeline run in the browser, or replay a saved trace.
+- Inspect past runs as JSON or standalone HTML reports without making model calls.
 
-- A conversation pipeline with machine selection, parallel calls, group synthesis, state updates, and reply review.
-- Two example personas: `testbed` exercises the machinery; `effusive` explores a more expressive character.
-- A terminal interface and a local browser interface with live pipeline events and trace replay.
-- Saved JSON traces and standalone HTML reports for inspecting past runs without making model calls.
-
-This is a research prototype. The code implements a working experiment; the wiki also contains proposals and older designs.
+Two example personas are included: `testbed` for checking the pipeline and `effusive` for trying a more expressive character.
 
 ## Quick start
 
@@ -63,20 +61,20 @@ Open `viewer/index.html` in a browser to browse the generated reports. To rebuil
 python viewer/build_viewer.py traces/effusive-20260601-170224
 ```
 
-Reports include selected machines, their outputs, synthesis groups, interior-state changes, replies, and recorded model calls. The generated HTML files remain in the repository as browsable experiment records. [.gitattributes](.gitattributes) excludes those reports from GitHub's language statistics. The maintained live frontend, `viewer/live.html`, still counts as HTML.
+Reports show which prompts ran, how their outputs were combined, what state changed, and the resulting reply. They also include the recorded model calls for closer inspection.
 
 ## How a turn works
 
-A **machine** is a prompt specification with a particular sensitivity and output, such as hesitation, memory, or rhythm. Each persona defines its machines in `manifest.yaml`.
+A **machine** is a prompt with a specific task and criteria for when it should run. Each persona defines its machines in `manifest.yaml`.
 
-The **BwO** (body without organs) is the project's name for a mutable text describing the character's interior state. It starts from `bwo_seed.txt` and changes after each turn.
+Each character also has a text state that changes during the conversation. The code calls this state `BwO`. It starts from `bwo_seed.txt`.
 
-1. **Select machines.** Always-on machines fire each turn. Relevance scores and a random vote select additional machines from the pool.
-2. **Run machines.** Each selected machine reads the same pre-turn state and situation. Machine calls run in parallel.
-3. **Group and synthesize.** Code partitions machines into groups. Each group combines their products through a synthesis call.
-4. **Update the interior.** An editor reads the group outputs, rewrites the BwO, records edits, and drafts a reply.
-5. **Shape and review the reply.** The armor stage shapes the spoken reply. A blind reviewer checks its fit using only the situation and conversation. Failed reviews trigger a bounded redraft loop.
-6. **Keep the result.** The runtime stores the updated state and conversation history in memory. The CLI and live server save the turn trace.
+1. **Select machines.** Always-on machines run each turn. Relevance scores and random sampling select additional machines from the roster.
+2. **Run machines.** Each selected machine reads the same state and conversation context. Calls run in parallel.
+3. **Combine outputs.** The runtime randomly divides the machines into groups. A model call combines each group's outputs into one result.
+4. **Update state and draft a reply.** An editor reads the group results, updates the character's state, and drafts a reply. It also records what changed.
+5. **Revise and check the reply.** A revision step, called `armor` in the code, adjusts the draft for delivery. A separate reviewer checks it against the setting and conversation without seeing the internal state. If the reply fails, the pipeline retries up to the configured limit.
+6. **Save the turn.** The runtime keeps the updated state and conversation history in memory. The CLI and live server save a trace for inspection.
 
 [pipeline.py](persona2/pipeline.py) defines the current sequence. [prompts.py](persona2/prompts.py) contains the prompts. The [prompt walkthrough](docs/pipeline-prompts.md) records an earlier version for design reference.
 
@@ -88,9 +86,9 @@ A persona directory contains:
 
 | File | Purpose |
 | --- | --- |
-| `manifest.yaml` | Machine roster, sensitivities, outputs, and always-on flags. |
-| `voice.md` | Voice sketch used when shaping the reply. |
-| `bwo_seed.txt` | Initial interior state for a new conversation. |
+| `manifest.yaml` | Machine tasks, selection criteria, and always-on flags. |
+| `voice.md` | Instructions for how the character speaks. |
+| `bwo_seed.txt` | Initial character state for a new conversation. |
 | `situation.txt` | Optional setting; otherwise the runtime uses a public waiting-place scenario. |
 
 Copy an existing directory under `personas/`, edit its files, and pass its path to `persona2 chat` or `persona2 live`. The world schema and sample graph are design material; the current persona loader does not consume them.
@@ -108,9 +106,7 @@ wiki/           Research, design searches, and archived project material
 pyproject.toml  Package metadata, dependencies, and test configuration
 ```
 
-The active implementation formerly lived under `v2/`; it now lives at the repository root. The package and command remain named `persona2`.
-
-Start with the [wiki guide](wiki/README.md) for research navigation. The [design searches](wiki/design_search/README.md) explain the sources behind implementation choices. The [archive](wiki/archive/README.md) holds earlier project material.
+The [wiki guide](wiki/README.md) links to background research, design notes, and archived material. Some wiki pages describe proposals that the runtime does not implement.
 
 ## Development
 
