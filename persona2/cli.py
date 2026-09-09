@@ -27,9 +27,13 @@ _TIERS = {"haiku": CHEAP, "sonnet": MID, "opus": TOP}
 
 
 def _load_env() -> None:
-    """Find an ANTHROPIC_API_KEY from common .env locations (incl. the V1 dir)."""
-    here = Path(__file__).resolve().parent.parent  # v2/
-    for p in (Path.cwd() / ".env", here / ".env", here.parent / "persona" / ".env"):
+    """Load local settings, including the archived V1 key as a fallback."""
+    here = Path(__file__).resolve().parent.parent  # repository root
+    for p in (
+        Path.cwd() / ".env",
+        here / ".env",
+        here / "wiki" / "archive" / "persona" / ".env",
+    ):
         if p.exists():
             load_dotenv(p, override=False)
 

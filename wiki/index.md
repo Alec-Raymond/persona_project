@@ -1,7 +1,7 @@
 ---
 title: Index
 created: 2026-04-09
-updated: 2026-04-22 (Lacan *Seminar XXIII: Le Sinthome* ingest)
+updated: 2026-09-08
 tags:
   - meta
 ---
@@ -11,6 +11,10 @@ tags:
 # Wiki Index
 
 Master index of all wiki pages. Read this first to orient to the wiki's current state.
+
+For repository navigation, use the [wiki guide](README.md),
+[design-search index](design_search/README.md), and [project archive](archive/README.md).
+The [project README](../README.md) describes the current implementation.
 
 ## Raw Sources
 

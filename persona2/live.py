@@ -25,7 +25,7 @@ from .config import Config
 from .persona import load_persona
 from .runtime import Runtime
 
-_ROOT = Path(__file__).resolve().parent.parent  # v2/
+_ROOT = Path(__file__).resolve().parent.parent  # repository root
 _PAGE = _ROOT / "viewer" / "live.html"
 _TRACES = _ROOT / "traces"
 

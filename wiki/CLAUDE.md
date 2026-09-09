@@ -8,14 +8,21 @@ The wiki sits between raw sources and the codebase. It accumulates understanding
 
 ```
 wiki/
+  README.md               # Guide for browsing the wiki on GitHub
   raw/                    # Primary sources — immutable after placement
   theory/                 # Theory pages — flat, organic, no subcategories
   development/            # Synthesis pages, development plans, open questions
+  design_search/          # Research records supporting machine design
+  archive/                # Earlier plans, scratch notes, and local V1 prototype
   cited-sources.md        # References not yet read
   index.md                # Master index (read this first to orient)
   log.md                  # Chronological activity log
   CLAUDE.md               # This file
 ```
+
+The active Python package lives at `../persona2/`, with example personas in
+`../personas/` and runtime documentation in `../docs/`. These directories
+previously lived under `v2/`. Start with `../README.md` for the current runtime.
 
 ### raw/
 

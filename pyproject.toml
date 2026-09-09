@@ -1,7 +1,7 @@
 [project]
 name = "persona2"
 version = "0.1.0"
-description = "Persona V2 — desiring-machine pipeline (character as emergent process, not static spec)"
+description = "Experimental persona runtime: character as an emergent process through desiring machines"
 requires-python = ">=3.11"
 dependencies = [
     "anthropic>=0.40",
@@ -27,3 +27,4 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]

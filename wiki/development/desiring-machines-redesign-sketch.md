@@ -2,9 +2,9 @@
 
 A barebones sketch of the redesigned pipeline, framed around the open questions that still need answering before any of it can be built. The sketch follows the order in which the redesign was described, not necessarily strict execution order.
 
-> **Note on citations.** This project will eventually produce a research report. Every design choice in this sketch should be traceable to a source — a wiki theory page, a primary text, a prior dev note — with the reasoning behind it explicit. Wiki searches that inform decisions are logged in `design_search/`. As decisions move from "candidate" to "adopted," the corresponding citation should travel with them so the eventual report has provenance for each architectural commitment.
+> **Note on citations.** This project will eventually produce a research report. Every design choice in this sketch should be traceable to a source — a wiki theory page, a primary text, a prior dev note — with the reasoning behind it explicit. Wiki searches that inform decisions are logged in [design searches](../design_search/README.md). As decisions move from "candidate" to "adopted," the corresponding citation should travel with them so the eventual report has provenance for each architectural commitment.
 
-> **Engineering substrate context.** The redesign sits in the agentic-systems engineering domain mapped by Gullí 2025 (*Agentic Design Patterns*) and adjacent literature. Patterns from that catalog we use: **Routing** (selection / voting model), **Parallelization** (per-machine + group synthesis stages), **Reflection** (synthesizer choosing its own mode; Stage 5 Ambition-Piety diagnostic), **Memory Management** (BwO + `fire_count` + `mode_history`), **Multi-Agent Collaboration** (Network + Critic-Reviewer + Parallel hybrid topology). Group syntheses with different modes are structurally close to **Graph of Debates (GoD)** — local clusters produce robustly-shaped outputs without forcing consensus. The book's *goal-driven* framing of agents is held as anti-model; we take the engineering vocabulary as substrate while resisting the framing. See `design_search/07-agentic-best-practices.md`.
+> **Engineering substrate context.** The redesign sits in the agentic-systems engineering domain mapped by Gullí 2025 (*Agentic Design Patterns*) and adjacent literature. Patterns from that catalog we use: **Routing** (selection / voting model), **Parallelization** (per-machine + group synthesis stages), **Reflection** (synthesizer choosing its own mode; Stage 5 Ambition-Piety diagnostic), **Memory Management** (BwO + `fire_count` + `mode_history`), **Multi-Agent Collaboration** (Network + Critic-Reviewer + Parallel hybrid topology). Group syntheses with different modes are structurally close to **Graph of Debates (GoD)** — local clusters produce robustly-shaped outputs without forcing consensus. The book's *goal-driven* framing of agents is held as anti-model; we take the engineering vocabulary as substrate while resisting the framing. See [Design Search 07](../design_search/07-agentic-best-practices.md).
 
 ## Why redesign
 
@@ -499,7 +499,7 @@ These nine categories give the structural organization of the [Desiring-machine 
 
    *Firing.* Standard selection. The relevance voter naturally raises a noticing machine's score when its signature is present in the current input.
 
-   *Wiki catalog of noticing machines* (starting corpus from a wiki search, logged in `design_search/`):
+   *Wiki catalog of noticing machines* (starting corpus from a wiki search, logged in [design searches](../design_search/README.md)):
 
    1. **Length-shift** — utterance length departs significantly from the established baseline (terse → expansive or the reverse). Carries reservation, relief, mobilization.
    2. **Hesitation** — pause-markers (ellipses, dashes, mid-sentence breaks), stalled formulation, explicit "uh"/"hm". *Anchor:* Jung's delayed-reaction signature (`theory/association-experiment.md`).
@@ -535,7 +535,7 @@ These nine categories give the structural organization of the [Desiring-machine 
 
    *Firing.* Random selection like other machines, with the relevance voter raising Want-of-the-other when the interlocutor's input is loaded with demand, and Rehearsal when a consequential move is pending.
 
-   *Wiki catalog of Desire machines* (starting corpus from a wiki search, logged in `design_search/`):
+   *Wiki catalog of Desire machines* (starting corpus from a wiki search, logged in [design searches](../design_search/README.md)):
 
    1. **Fantasy** — generates an imagined scene the persona is briefly carried into: something wished-for, or dreaded. Plays the scene in showing-mode (the scene unfolds; not "the persona imagines X"). *Anchor:* Lacan's fantasy as the support of desire (`theory/fantasy-formula.md`); D&G's critique of fantasy-as-theater (`theory/desire-as-production.md`) — an angle on fantasy's risks, not an operating instruction.
    2. **Wish** — articulates a bare want, often counterfactual ("if only…", "I want…", "I wish…") — the want compressed to a statement rather than a scene. *Anchor:* Lacan's demand (`theory/need-demand-desire.md`).
@@ -557,7 +557,7 @@ These nine categories give the structural organization of the [Desiring-machine 
 
    *Firing.* By probability, like the affect baselines, plus a relevance-boost when the input has a shape the machine is sensitive to (the "insult" analogue — input the persona's defaults can't smoothly absorb). The persona's **chronic armor** — its constant defended manner, in Reich's sense that armor "always remains the same" — is simply a trauma machine with a very high baseline probability, firing almost every turn. Situational defenses run at low baselines and surface mainly on triggering input. The ghostwriter tunes chronicity by moving the probability.
 
-   *Wiki catalog of trauma machines* (starting corpus from a wiki search, logged in `design_search/`):
+   *Wiki catalog of trauma machines* (starting corpus from a wiki search, logged in [design searches](../design_search/README.md)):
 
    1. **Harden** — shuts the situation out; meets it with opposition, won't be moved, can tip into counterattack. Reich/Keleman's rigid stance — "I won't."
    2. **Withhold** — complies on the surface but gives as little as possible; compacts, goes sullen, waits the situation out. The dense stance — "make me."
@@ -595,7 +595,7 @@ These nine categories give the structural organization of the [Desiring-machine 
 
    *Interaction with other machines.* The Compensator's most constant work is countering the persona's *own chronic armor* — a Trauma machine running at a high baseline is a standing one-sidedness, and that lean is exactly what the Compensator reads and works against.
 
-   *Anchors:* Jung's compensation doctrine and the three regimes (`theory/compensation.md`, CW 8 §546); the self-regulation claim (CW 8 §547, CW 6 §694); enantiodromia as the underlying law (`theory/enantiodromia.md`); the corrector-not-generator caution (CW 8 §568). Search logged in `design_search/`.
+   *Anchors:* Jung's compensation doctrine and the three regimes (`theory/compensation.md`, CW 8 §546); the self-regulation claim (CW 8 §547, CW 6 §694); enantiodromia as the underlying law (`theory/enantiodromia.md`); the corrector-not-generator caution (CW 8 §568). Search logged in [design searches](../design_search/README.md).
 
    *Open questions:*
    - **Regime-selection** — how the Compensator judges which regime the situation calls for. Recommendation: its own LLM call judges it (reads the gradient, picks the regime), like the synthesizer picking its mode. Jung gives no mechanism; the wiki lists alternatives (spread measures, axis-against-axis checks). A real open sub-problem.
@@ -624,7 +624,7 @@ These nine categories give the structural organization of the [Desiring-machine 
 
    *Firing.* Relevance-driven (the situation calls for a bid, a cut, an attunement) plus random. The persona carries the six with per-machine weightings the ghostwriter tunes — a high Lower probability makes a habitually low-status persona.
 
-   *Anchors:* coupled prediction (`theory/mutual-prediction-loops.md`); Bakhtin's boundary-being and dialogism (`theory/boundary-being.md`, `theory/dialogism.md`); Merleau-Ponty's intercorporeity, as the no-body limit (`theory/intercorporeity.md`); the projective bond (`theory/soulove.md`); **Johnstone, *Impro* (1979)** for the status pair — a candidate new source, not yet in the wiki (added to `cited-sources.md` for ingest). Search logged in `design_search/`.
+   *Anchors:* coupled prediction (`theory/mutual-prediction-loops.md`); Bakhtin's boundary-being and dialogism (`theory/boundary-being.md`, `theory/dialogism.md`); Merleau-Ponty's intercorporeity, as the no-body limit (`theory/intercorporeity.md`); the projective bond (`theory/soulove.md`); **Johnstone, *Impro* (1979)** for the status pair — a candidate new source, not yet in the wiki (added to `cited-sources.md` for ingest). Search logged in [design searches](../design_search/README.md).
 
    *Open questions:*
    - Cut vs Trauma's Withdraw, and Attune vs the Perception noticers — adjacencies to watch in practice.
@@ -638,7 +638,7 @@ These nine categories give the structural organization of the [Desiring-machine 
 
    *Polyrhythmic health — a ghostwriter diagnostic.* The persona is a polyrhythmic field — lexical, syntactic, stance, turn-cadence, register-shift, and topic-cycling rhythms running together (`theory/polyrhythmia-eurhythmia-arrhythmia.md`, `theory/body-as-bundle-of-rhythms.md`). Lefebvre's apparatus — eurhythmic / arrhythmic / isorhythmic — is a *diagnostic*, not a taxonomy of machines, and the ghostwriter is the natural rhythmanalyst: in its between-conversation review it reads the persona's rhythmic state — eurhythmic (rhythms in good composition), arrhythmic (registers clashing, whiplash), isorhythmic (flattened to a single beat — always the same length, formality, affect) — and tunes the machine set toward eurhythmia. **Isorhythmia is a named failure mode**: the persona collapsed to monotone. Not a firing machine — a lens for the ghostwriter's review.
 
-   *Anchors:* Lefebvre's rhythmanalysis and the polyrhythmia/eurhythmia/arrhythmia apparatus (`theory/rhythmanalysis.md`, `theory/polyrhythmia-eurhythmia-arrhythmia.md`); rhythm-vs-repetition (`theory/rhythm-vs-repetition.md`); D&G's refrain (`theory/refrain-and-territorialization.md`); Keleman's pulsation (`theory/emotional-anatomy.md`). Search logged in `design_search/`.
+   *Anchors:* Lefebvre's rhythmanalysis and the polyrhythmia/eurhythmia/arrhythmia apparatus (`theory/rhythmanalysis.md`, `theory/polyrhythmia-eurhythmia-arrhythmia.md`); rhythm-vs-repetition (`theory/rhythm-vs-repetition.md`); D&G's refrain (`theory/refrain-and-territorialization.md`); Keleman's pulsation (`theory/emotional-anatomy.md`). Search logged in [design searches](../design_search/README.md).
 
    *Open questions:*
    - The Pulsation machine needs a lightweight "recent tempo" memory (parallel to `mode_history`) so it can produce difference-from-recent rather than a fixed tempo.

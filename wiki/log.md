@@ -1,7 +1,7 @@
 ---
 title: Activity Log
 created: 2026-04-09
-updated: 2026-04-22
+updated: 2026-09-08
 tags:
   - meta
   - audit
@@ -3432,3 +3432,8 @@ Project memory **`project_persona_use_case.md`** updated with **architectural-ri
 - Did not run `qmd embed`.
 
 **qmd re-index pending at session close.**
+
+
+## [2026-09-08] Repository reorganization
+
+Moved the active `v2/` implementation to the repository root. Moved the root design searches to `wiki/design_search/`, and the scratch notes and original wiki plan to `wiki/archive/`. The local V1 repository moves to `wiki/archive/persona/` with its Git history intact and remains ignored. Added the [wiki guide](README.md), [design-search index](design_search/README.md), and [archive guide](archive/README.md). Updated navigation to the new paths; preserved the research content.

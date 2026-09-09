@@ -1,4 +1,10 @@
-# V2 Pipeline — Prompts & Interactions (proofreading guide)
+# Pipeline — Prompts & Interactions (historical proofreading guide)
+
+This document records an earlier pipeline snapshot. The current runtime also
+includes reply shaping (armor), a blind fit check, and a bounded redraft loop.
+Start with the [current pipeline overview](../README.md#how-a-turn-works), and
+use [prompts.py](../persona2/prompts.py) and
+[pipeline.py](../persona2/pipeline.py) for the current implementation.
 
 A self-contained walkthrough of every prompt in the per-turn pipeline and how
 they feed each other. The prompt text below is reproduced **as the model

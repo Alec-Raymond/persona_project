@@ -10,20 +10,19 @@
 **/.pytest_cache/
 __pycache__/
 *.pyc
+dist/
+*.egg-info/
 
 # Claude local settings
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
-# V1 prototype — throwaway, has its own git history (excluded)
-/persona/
+# V1 prototype — local archive with its own Git history
+/wiki/archive/persona/
 
 # Obsidian workspace config
 wiki/.obsidian/
 
-# Raw source binaries — keep markdown ingests, drop PDFs/HTML/large dumps
-wiki/raw/*
-!wiki/raw/*.md
-.claude/
-persona/
+# Raw source library remains local
 wiki/raw/
+.claude/
