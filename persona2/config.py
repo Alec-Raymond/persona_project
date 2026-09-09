@@ -1,18 +1,28 @@
 """Tunable parameters and model tiers for the per-turn pipeline.
 
-Everything here is meant to be swept empirically (see the redesign sketch's
-"Tunable parameters" section). Defaults are skeleton-scale: small N, cheap
-models, so a turn is fast and cheap to inspect.
+Model defaults depend on the backend. Codex uses Astra; Anthropic and the
+Claude CLI use Sonnet. Haiku is available as an explicit override.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 
 # --- Model tiers (exact API IDs) ---
 CHEAP = "claude-haiku-4-5-20251001"  # selectors, per-machine calls — narrow work
 MID = "claude-sonnet-5"         # group synthesizers — mode-choice + synthesis
 TOP = "claude-opus-4-8"         # final machine — most context, the response
+ASTRA = "gpt-6-astra"
+BACKENDS = ("anthropic", "claude", "codex")
+REASONING_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+
+
+def default_backend() -> str:
+    """Preserve the older Claude CLI setting unless a backend is explicit."""
+    return os.environ.get("PERSONA2_BACKEND") or (
+        "claude" if os.environ.get("PERSONA2_CLAUDE_CLI") else "anthropic"
+    )
 
 # The four group-synthesis modes. Transcendent function is pairs-only.
 MODES = ("connective", "disjunctive", "conjunctive", "transcendent")
@@ -20,7 +30,11 @@ MODES = ("connective", "disjunctive", "conjunctive", "transcendent")
 
 @dataclass
 class Config:
-    """Per-run configuration. Skeleton defaults; tune freely."""
+    """Per-run configuration, including the model transport."""
+
+    backend: str = field(default_factory=default_backend)
+    reasoning_effort: str = "medium"  # Codex only
+    call_timeout: float = 300.0       # seconds per Codex call
 
     # --- selection ---
     top_n: int = 5              # variable machines that fire per turn (+ always-on set)
@@ -36,10 +50,10 @@ class Config:
     max_group: int = 4
 
     # --- models per stage ---
-    model_selector: str = CHEAP
-    model_machine: str = CHEAP
-    model_synth: str = MID
-    model_final: str = MID     # bump to TOP once wiring is proven
+    model_selector: str | None = None
+    model_machine: str | None = None
+    model_synth: str | None = None
+    model_final: str | None = None
 
     # --- llm call shape ---
     selector_max_tokens: int = 700
@@ -60,3 +74,15 @@ class Config:
     # --- bookkeeping ---
     history_window: int = 12   # conversation turns shown to selectors/final
     seed: int | None = None    # set for reproducible grouping/random selection
+
+    def __post_init__(self) -> None:
+        if self.backend not in BACKENDS:
+            raise ValueError(f"Unknown backend: {self.backend}. Choose from {', '.join(BACKENDS)}.")
+        if self.reasoning_effort not in REASONING_EFFORTS:
+            raise ValueError(f"Unknown reasoning effort: {self.reasoning_effort}")
+        if self.call_timeout <= 0:
+            raise ValueError("Call timeout must be positive.")
+        default_model = ASTRA if self.backend == "codex" else MID
+        for name in ("model_selector", "model_machine", "model_synth", "model_final"):
+            if getattr(self, name) is None:
+                setattr(self, name, default_model)

@@ -10,11 +10,14 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from typing import Literal
+
+from pydantic import create_model
 
 from .config import Config
 from .llm import call_llm
 from .machine import Machine, roster_text
-from .models import RelevanceVotes
+from .models import MachinePick, RelevanceVotes
 from .prompts import SELECTION_SYSTEM, format_selection_user
 
 
@@ -24,6 +27,18 @@ class SelectionResult:
     relevance: RelevanceVotes | None = None
     random_picks: list[str] = field(default_factory=list)
     scores: dict[str, float] = field(default_factory=dict)
+
+
+def relevance_schema(pool: list[Machine]) -> type[RelevanceVotes]:
+    """Constrain model output to bare names from this roster.
+
+    The displayed roster includes category/shape labels. Without an enum,
+    models can copy those labels into `name`, making every vote miss the
+    exact-name lookup below and leaving selection entirely to the random voter.
+    """
+    names = Literal[tuple(machine.name for machine in pool)]
+    pick = create_model("RosterMachinePick", __base__=MachinePick, name=(names, ...))
+    return create_model("RosterRelevanceVotes", __base__=RelevanceVotes, picks=(list[pick], ...))
 
 
 async def select(
@@ -53,7 +68,7 @@ async def select(
             history=history,
             k=cfg.relevance_k,
         ),
-        schema=RelevanceVotes,
+        schema=relevance_schema(pool),
         max_tokens=cfg.selector_max_tokens,
         temperature=cfg.temp_selector,
     )

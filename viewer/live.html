@@ -19,7 +19,7 @@ h1{font-size:15px;margin:0}
 #chat{display:flex;flex-direction:column;border-right:1px solid var(--line);
   background:#f5f1e8;height:100vh}
 #chat header{padding:14px 16px;border-bottom:1px solid var(--line)}
-#situation{font-size:12px;color:var(--muted);margin-top:4px}
+#situation,#modelInfo{font-size:12px;color:var(--muted);margin-top:4px}
 #bar{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line)}
 #bar select{flex:1;min-width:0;font-size:12px;padding:4px;border:1px solid var(--line);
   border-radius:4px;background:#fff}
@@ -120,6 +120,7 @@ details.compact>summary{cursor:pointer;color:var(--muted);font-size:11px;
   <header>
     <h1>persona2 <span id="pname" class="chip"></span></h1>
     <div id="situation"></div>
+    <div id="modelInfo"></div>
   </header>
   <div id="bar">
     <button id="newBtn">new conversation</button>
@@ -525,6 +526,8 @@ fetch("/info").then(r => r.json()).then(i => {
   personaName = i.persona;
   $("#pname").textContent = i.persona;
   $("#situation").textContent = i.situation;
+  $("#modelInfo").textContent = i.models
+    ? `${i.backend} · ${[...new Set(Object.values(i.models))].join(" / ")}` : "";
   setBusy(i.busy);
 });
 function loadTraces(){

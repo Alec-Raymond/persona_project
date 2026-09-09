@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from .bwo import BwO
 from .config import Config
+from .llm import model_backend
 from .persona import Persona
 from .pipeline import run_turn
 from .state import ConvState
@@ -30,13 +31,14 @@ class Runtime:
         return cls(cfg=cfg, persona=persona, state=state, rng=rng)
 
     async def turn(self, input_text: str) -> TurnTrace:
-        trace = await run_turn(
-            cfg=self.cfg,
-            persona=self.persona,
-            state=self.state,
-            input_text=input_text,
-            rng=self.rng,
-        )
+        with model_backend(self.cfg):
+            trace = await run_turn(
+                cfg=self.cfg,
+                persona=self.persona,
+                state=self.state,
+                input_text=input_text,
+                rng=self.rng,
+            )
         # append AFTER the turn (the pipeline reads prior history)
         self.state.history.append({"role": "user", "content": input_text})
         self.state.history.append({"role": "persona", "content": trace.response})

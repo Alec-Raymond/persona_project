@@ -17,13 +17,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from rich.console import Console
 
-from .config import CHEAP, MID, TOP, Config
+from .config import ASTRA, BACKENDS, CHEAP, MID, REASONING_EFFORTS, TOP, Config, default_backend
 from .persona import load_persona
 from .runtime import Runtime
 
 console = Console()
 
-_TIERS = {"haiku": CHEAP, "sonnet": MID, "opus": TOP}
+_TIERS = {"haiku": CHEAP, "sonnet": MID, "opus": TOP, "astra": ASTRA}
 
 
 def _load_env() -> None:
@@ -42,21 +42,47 @@ def _default_persona() -> Path:
     return Path(__file__).resolve().parent.parent / "personas" / "testbed"
 
 
-async def _chat(args: argparse.Namespace) -> None:
-    persona = load_persona(args.persona)
-    cfg = Config()
-    if args.all:
-        tier = _TIERS[args.all]
-        cfg.model_selector = cfg.model_machine = cfg.model_synth = cfg.model_final = tier
+def _model_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--backend", choices=BACKENDS, default=default_backend(),
+                        help="model transport (default: PERSONA2_BACKEND or anthropic)")
+    models = parser.add_mutually_exclusive_group()
+    models.add_argument("--model", help="model ID or alias for all stages (Codex default: astra)")
+    models.add_argument("--all", choices=list(_TIERS), help="model alias for all stages")
+    parser.add_argument("--final", help="model ID or alias for the final stage")
+    parser.add_argument("--reasoning", choices=REASONING_EFFORTS, default="medium",
+                        help="Codex reasoning effort (default: medium)")
+    parser.add_argument("--call-timeout", type=float, default=300.0,
+                        help="seconds per Codex call (default: 300)")
+    parser.add_argument("--concurrency", type=int, default=None)
+
+
+def _config_from_args(args: argparse.Namespace) -> Config:
+    cfg = Config(backend=args.backend, reasoning_effort=args.reasoning, call_timeout=args.call_timeout)
+    chosen = args.model or args.all
+    if chosen:
+        model = _TIERS.get(chosen, chosen)
+        cfg.model_selector = cfg.model_machine = cfg.model_synth = cfg.model_final = model
     if args.final:
-        cfg.model_final = _TIERS[args.final]
-    if args.concurrency:
+        cfg.model_final = _TIERS.get(args.final, args.final)
+    if args.concurrency is not None:
+        if args.concurrency < 1:
+            raise ValueError("Concurrency must be at least 1.")
         cfg.concurrency = args.concurrency
+    for model in (cfg.model_selector, cfg.model_machine, cfg.model_synth, cfg.model_final):
+        if cfg.backend == "codex" and model.startswith("claude-"):
+            raise ValueError("Claude models require --backend anthropic or --backend claude.")
+        if cfg.backend != "codex" and not model.startswith("claude-"):
+            raise ValueError("OpenAI models require --backend codex.")
+    return cfg
+
+
+async def _chat(args: argparse.Namespace, cfg: Config) -> None:
+    persona = load_persona(args.persona)
 
     rt = Runtime.new(persona, cfg=cfg, seed=args.seed)
     console.print(
         f"[bold]{persona.name}[/bold] — {len(persona.always_on)} always-on, "
-        f"{len(persona.pool)} in pool\n[dim]models: sel={cfg.model_selector} · "
+        f"{len(persona.pool)} in pool\n[dim]backend={cfg.backend} · sel={cfg.model_selector} · "
         f"machine={cfg.model_machine} · synth={cfg.model_synth} · final={cfg.model_final}[/dim]"
     )
 
@@ -129,10 +155,8 @@ def main(argv: list[str] | None = None) -> int:
     pc = sub.add_parser("chat", help="run the per-turn pipeline interactively")
     pc.add_argument("persona", nargs="?", default=str(_default_persona()))
     pc.add_argument("-m", "--message", action="append", help="run this message (repeatable, non-interactive)")
-    pc.add_argument("--all", choices=list(_TIERS), help="set ALL stage models to this tier")
-    pc.add_argument("--final", choices=list(_TIERS), help="final-machine model tier (overrides --all for the final)")
+    _model_arguments(pc)
     pc.add_argument("--seed", type=int, default=None)
-    pc.add_argument("--concurrency", type=int, default=None)
     pc.add_argument("--quiet", action="store_true", help="show only the response")
     pc.add_argument("--no-save", action="store_true", help="don't save traces")
 
@@ -141,28 +165,23 @@ def main(argv: list[str] | None = None) -> int:
 
     pl = sub.add_parser("live", help="serve the live frontend (chat in the browser)")
     pl.add_argument("persona", nargs="?", default=str(_default_persona()))
-    pl.add_argument("--all", choices=list(_TIERS), help="set ALL stage models to this tier")
-    pl.add_argument("--final", choices=list(_TIERS), help="final-stage model tier")
+    _model_arguments(pl)
     pl.add_argument("--port", type=int, default=8765)
-    pl.add_argument("--concurrency", type=int, default=None)
     pl.add_argument("--no-browser", action="store_true")
 
     args = parser.parse_args(argv)
+    if args.cmd in {"chat", "live"}:
+        try:
+            cfg = _config_from_args(args)
+        except ValueError as exc:
+            parser.error(str(exc))
     if args.cmd == "chat":
-        asyncio.run(_chat(args))
+        asyncio.run(_chat(args, cfg))
     elif args.cmd == "inspect":
         _inspect(args)
     elif args.cmd == "live":
         from .live import serve
 
-        cfg = Config()
-        if args.all:
-            tier = _TIERS[args.all]
-            cfg.model_selector = cfg.model_machine = cfg.model_synth = cfg.model_final = tier
-        if args.final:
-            cfg.model_final = _TIERS[args.final]
-        if args.concurrency:
-            cfg.concurrency = args.concurrency
         serve(args.persona, cfg, port=args.port, open_browser=not args.no_browser)
     return 0
 

@@ -5,7 +5,7 @@ message endpoint, and trace replay. The pipeline runs on an asyncio loop in
 a background thread; persona2.events fans its events out to every connected
 browser. One conversation per server run.
 
-    python -m persona2.cli live personas/effusive --all sonnet
+    python -m persona2.cli live personas/effusive --backend codex
 """
 
 from __future__ import annotations
@@ -306,6 +306,13 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/info":
             self._json(200, {
                 "persona": SESSION.persona.name,
+                "backend": SESSION.cfg.backend,
+                "models": {
+                    "selector": SESSION.cfg.model_selector,
+                    "machine": SESSION.cfg.model_machine,
+                    "synthesis": SESSION.cfg.model_synth,
+                    "final": SESSION.cfg.model_final,
+                },
                 "situation": SESSION.persona.situation,
                 "busy": SESSION.busy,
             })
@@ -354,7 +361,7 @@ def serve(persona_dir: str, cfg: Config, port: int = 8765,
     SESSION = Session(persona_dir, cfg)
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
-    print(f"live frontend → {url}   (persona: {SESSION.persona.name})")
+    print(f"live frontend → {url}   (persona: {SESSION.persona.name}, backend: {cfg.backend})")
     if open_browser:
         webbrowser.open(url)
     try:

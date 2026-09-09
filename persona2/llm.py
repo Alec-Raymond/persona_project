@@ -36,8 +36,20 @@ from tenacity import (
 )
 
 from . import events
+from .config import Config
 
 _client: AsyncAnthropic | None = None
+_run_config: contextvars.ContextVar[Config | None] = contextvars.ContextVar("_run_config", default=None)
+
+
+@contextmanager
+def model_backend(cfg: Config):
+    """Keep backend settings local to this runtime and its parallel calls."""
+    token = _run_config.set(cfg)
+    try:
+        yield
+    finally:
+        _run_config.reset(token)
 
 
 def client() -> AsyncAnthropic:
@@ -321,9 +333,9 @@ async def call_llm(
     Pydantic model (returned validated). Otherwise the joined text is returned.
     `stage`/`label` tag the call in the trace.
 
-    With PERSONA2_CLAUDE_CLI=1 the call routes through the `claude` CLI
-    (subscription-billed) instead of the SDK; `max_tokens`, `temperature`,
-    and `cache` do not apply on that path.
+    The runtime's backend selects the Anthropic SDK, Claude CLI, or Codex CLI.
+    SDK token limits, temperature, and cache settings do not apply to CLI
+    backends. Codex uses its own reasoning setting and per-call timeout.
     """
     call_key = f"{stage}/{label}"
     events.emit(
@@ -331,12 +343,25 @@ async def call_llm(
         schema=bool(schema),
     )
 
-    if os.environ.get("PERSONA2_CLAUDE_CLI"):
+    cfg = _run_config.get() or Config()
+    if cfg.backend in {"claude", "codex"}:
         t0 = time.monotonic()
-        result, output_repr, usage_d = await _cli_call(
-            model=model, system=system, user=user, schema=schema,
-            call_key=call_key,
-        )
+        if cfg.backend == "codex":
+            from .codex import generate
+
+            result, output_repr, usage_d = await generate(
+                model=model, system=system, user=user, schema=schema,
+                reasoning_effort=cfg.reasoning_effort, timeout=cfg.call_timeout,
+            )
+            # Codex exec reports complete messages rather than token deltas.
+            events.emit("call_delta", id=call_key, text=(
+                json.dumps(output_repr) if schema else output_repr
+            ))
+        else:
+            result, output_repr, usage_d = await _cli_call(
+                model=model, system=system, user=user, schema=schema,
+                call_key=call_key,
+            )
         _record(
             LLMCall(
                 stage=stage,

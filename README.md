@@ -25,26 +25,42 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
 
-For new conversations, set `ANTHROPIC_API_KEY` in your environment or in a root `.env` file. The [.env.example](.env.example) file shows the supported settings.
+To use your ChatGPT subscription, install the [Codex CLI](https://learn.chatgpt.com/docs/codex-cli) and sign in with ChatGPT:
 
 ```bash
-export ANTHROPIC_API_KEY="your-api-key"
-persona2 chat personas/testbed --all haiku
+codex login
+persona2 chat personas/effusive --backend codex
 ```
+
+The Codex backend uses **Astra (`gpt-6-astra`) for every stage** by default. It uses your ChatGPT login and Codex allowance; no OpenAI API key is needed. See [Codex authentication](https://learn.chatgpt.com/docs/auth).
 
 The command prints the full turn trace and saves JSON under `traces/`. Type `quit` to end the conversation. Use `--quiet` to show only replies or `--no-save` to disable trace saving.
 
 The browser interface shows each stage as it runs:
 
 ```bash
-persona2 live personas/effusive --all haiku
+persona2 live personas/effusive --backend codex
 ```
 
 Open <http://localhost:8765> if the browser does not open automatically. Each server run holds one conversation.
 
-`--all haiku` uses the same model tier for every stage. Omit it to use the per-stage defaults in [config.py](persona2/config.py). The CLI also accepts `--all sonnet`, `--all opus`, and `--final` to choose the final-stage tier. Model identifiers and tuning parameters live in `config.py`.
+## Backends and models
 
-An optional backend calls an installed, authenticated `claude` CLI. Enable it with `PERSONA2_CLAUDE_CLI=1`; that backend does not use the SDK's API key, temperature, token-limit, or cache settings.
+| Backend | Authentication | Default model |
+| --- | --- | --- |
+| `--backend codex` | Codex CLI signed in with ChatGPT | Astra |
+| `--backend claude` | Installed, authenticated `claude` CLI | Sonnet |
+| `--backend anthropic` | `ANTHROPIC_API_KEY` in the environment or root `.env` | Sonnet |
+
+Set `PERSONA2_BACKEND=codex` in a root `.env` file to use Codex without repeating the flag. Without a backend setting, the app uses Anthropic. The older `PERSONA2_CLAUDE_CLI=1` setting still selects the Claude CLI. See [.env.example](.env.example).
+
+Use `--model` to set every stage or `--final` to override the final stage. Both accept model IDs or aliases: `astra`, `sonnet`, `opus`, and `haiku`. Choose a model supported by the selected backend. The older `--all` flag also accepts these aliases. **Haiku is opt-in.**
+
+Codex uses `--reasoning medium` and a 300-second timeout per call by default. Change these with `--reasoning` and `--call-timeout`. `--concurrency` controls how many model calls can run at once. Model defaults and pipeline settings live in [config.py](persona2/config.py).
+
+The Codex backend runs each stage in a fresh temporary session and validates structured responses against the pipeline's schemas. It does not load your personal Codex configuration or project instructions. The browser receives each call's text when that call completes; Codex does not provide token-by-token updates here.
+
+SDK temperature, token-limit, and cache settings apply only to the Anthropic backend. CLI backends use their own generation settings. A Codex login, model-access, or usage-limit error stops the turn; the app does not switch to a paid API backend.
 
 ## Inspect an existing run
 
@@ -115,4 +131,10 @@ python -m pytest -q
 persona2 --help
 ```
 
-The tests cover persona loading, machine validation, grouping, schema generation, and trace serialization/rendering. They do not verify live model responses. New conversations call external models through the configured backend.
+The tests cover persona loading, grouping, schemas, traces, backend selection, and Codex process handling. They mock model calls. To test a real conversation locally:
+
+```bash
+persona2 chat personas/effusive --backend codex --quiet -m "Is this seat taken?"
+```
+
+The command uses your subscription and saves a trace under `traces/` for inspection.
