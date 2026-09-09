@@ -13,6 +13,8 @@ Each reply passes through several model calls. They select relevant prompts, com
 
 Two example personas are included: `testbed` for checking the pipeline and `effusive` for trying a more expressive character.
 
+The [development status note](wiki/development/status-2026-09-09.md) separates the working prototype from the larger design proposals.
+
 ## Quick start
 
 Use Python 3.11 or newer. Run these commands from a local checkout:
@@ -58,11 +60,19 @@ Use `--model` to set every stage or `--final` to override the final stage. Both 
 
 Codex uses `--reasoning medium` and a 300-second timeout per call by default. Change these with `--reasoning` and `--call-timeout`. `--concurrency` controls how many model calls can run at once. Model defaults and pipeline settings live in [config.py](persona2/config.py).
 
-The Codex backend runs each stage in a fresh temporary session and validates structured responses against the pipeline's schemas. It does not load your personal Codex configuration or project instructions. The browser receives each call's text when that call completes; Codex does not provide token-by-token updates here.
+The Codex backend runs each stage in a fresh temporary session and validates structured responses against the pipeline's schemas. It requests a replacement base prompt, skips personal configuration, and disables coding tools. This still uses the Codex agent runner. Prompt isolation is not verified: a separate CLI prompt audit still renders skills and agent instructions. Recorded traces contain the application's prompts, not a complete dump of Codex's model context. The browser receives each call's text when that call completes.
 
 SDK temperature, token-limit, and cache settings apply only to the Anthropic backend. CLI backends use their own generation settings. A Codex login, model-access, or usage-limit error stops the turn; the app does not switch to a paid API backend.
 
 ## Inspect an existing run
+
+The [replay website](https://persona-traces.jjraymond-ai.chatgpt.site) opens exported multi-turn Astra conversations. The site is private to its owner. Selected published conversations will appear in its picker; the initial collection is empty.
+
+1. Chat in the local browser interface for at least two turns.
+2. Click **Export conversation** when the turn finishes.
+3. Open the JSON file with **Open conversation** on the replay website.
+
+The website reads opened files in the browser without uploading them. It shows the transcript, machine outputs, syntheses, state changes, and recorded calls. Exports require Astra for every call and continuous state across turns. See [replay-site/README.md](replay-site/README.md) to select conversations for publication.
 
 After installing the project, these commands work without model credentials:
 
@@ -116,6 +126,7 @@ persona2/       Python package, runtime, prompts, and CLI
 personas/       Example persona definitions
 tests/          Automated tests that do not call models
 viewer/         Live frontend, report builder, and generated HTML reports
+replay-site/    Hosted viewer for selected multi-turn Astra conversations
 traces/         Saved experiment runs as JSON
 docs/           Runtime documentation and historical prompt walkthrough
 wiki/           Research, design searches, and archived project material

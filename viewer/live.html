@@ -126,6 +126,7 @@ details.compact>summary{cursor:pointer;color:var(--muted);font-size:11px;
     <button id="newBtn">new conversation</button>
     <select id="traceSel"><option>loading…</option></select>
     <button id="replayBtn">replay</button>
+    <button id="exportBtn" title="Save this conversation for the replay website">Export conversation</button>
   </div>
   <div id="transcript"></div>
   <div id="status"></div>
@@ -197,7 +198,8 @@ function el(tag, cls, parent, text){
 }
 function setStatus(t){ $("#status").textContent = t; }
 function setBusy(b){ busy = b; $("#send").disabled = b;
-  $("#replayBtn").disabled = b; $("#newBtn").disabled = b; }
+  $("#replayBtn").disabled = b; $("#newBtn").disabled = b;
+  $("#exportBtn").disabled = b; }
 function addMsg(who, text){
   const mine = who === "you";
   const m = el("div", "msg " + (mine ? "us" : "them"), $("#transcript"));
@@ -539,6 +541,18 @@ function loadTraces(){
   });
 }
 loadTraces();
+$("#exportBtn").onclick = async () => {
+  try {
+    const response = await fetch("/export");
+    if (!response.ok) { setStatus((await response.json()).error); return; }
+    const data = await response.json();
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: "application/json"}));
+    const link = document.createElement("a");
+    link.href = url; link.download = data.id + ".json"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setStatus("Conversation exported.");
+  } catch { setStatus("Could not export the conversation. Check the local server."); }
+};
 $("#newBtn").onclick = () => {
   fetch("/reset", {method:"POST", headers:{"Content-Type":"application/json"},
     body: "{}"}).then(r => { if (r.ok) clearAll(); });

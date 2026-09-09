@@ -12,6 +12,8 @@ The research and design knowledge base for [Persona Project](../README.md). This
 
 ## Start here
 
+- [Development status, 9 September 2026](development/status-2026-09-09.md): the last working implementation, deferred features, and current test limits.
+
 - [Master index](index.md): the full catalog of theory pages and research notes.
 - [Desiring-machines redesign](development/desiring-machines-redesign-sketch.md): design rationale and candidate architecture.
 - [Design searches](design_search/README.md): fourteen investigations connecting the research to machine design.

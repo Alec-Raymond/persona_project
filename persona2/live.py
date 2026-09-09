@@ -24,6 +24,7 @@ from . import events
 from .config import Config
 from .persona import load_persona
 from .runtime import Runtime
+from .trace_export import export_run
 
 _ROOT = Path(__file__).resolve().parent.parent  # repository root
 _PAGE = _ROOT / "viewer" / "live.html"
@@ -315,7 +316,24 @@ class Handler(BaseHTTPRequestHandler):
                 },
                 "situation": SESSION.persona.situation,
                 "busy": SESSION.busy,
+                "turn_count": SESSION.turn_n,
             })
+        elif self.path == "/export":
+            if SESSION.busy:
+                self._json(409, {"error": "Wait for the current turn to finish before exporting."})
+                return
+            try:
+                data = export_run(SESSION.save_dir)
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+                return
+            body = json.dumps(data, ensure_ascii=False, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="{SESSION.save_dir.name}.json"')
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         elif self.path == "/traces":
             dirs = sorted(
                 (p.name for p in _TRACES.iterdir() if p.is_dir()), reverse=True

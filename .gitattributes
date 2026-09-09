@@ -3,6 +3,7 @@ viewer/*.html linguist-generated=true
 # The live frontend is maintained source code and should count as HTML.
 viewer/live.html -linguist-generated
 traces/** linguist-generated=true
+replay-site/public/selected/*.json linguist-generated=true
 
 # Research and archived design material are documentation.
 wiki/** linguist-documentation=true
