@@ -9,7 +9,8 @@ a product part — and every output stands alone: each stage's text carries
 its own referents because its reader never sees its inputs. The interior
 editor thinks (500w), rewrites the surface, logs edits, and writes the
 initial reply; the armor selects the spark from that reply, sized by the
-Pulsation machine's rhythm read and tuned by the new surface. Stages
+Pulsation machine's rhythm read and tuned by the new surface. The editor,
+armor, and every rewrite receive the complete named group syntheses. Stages
 1 → (2,3) → 4 → 5 are sequential; fan-out within stages 2 and 4 is bounded
 by a semaphore (cfg.concurrency).
 """
@@ -161,6 +162,11 @@ async def run_turn(
                 )
 
         syntheses = await asyncio.gather(*(_syn(g) for g in groups))
+        group_traces = [
+            GroupTrace(members=[m.name for m in group], mode=synthesis.mode,
+                       thinking=synthesis.thinking, result=synthesis.result)
+            for group, synthesis in zip(groups, syntheses)
+        ]
         for gi, (g, s) in enumerate(zip(groups, syntheses)):
             events.emit(
                 "synthesis_done",
@@ -182,7 +188,7 @@ async def run_turn(
             system=BWO_EDIT_SYSTEM,
             user=format_bwo_edit_user(
                 bwo_text=bwo_before,
-                groups=[(s.thinking, s.result) for s in syntheses],
+                groups=group_traces,
                 input_text=input_text,
                 history=history,
                 voice_sketch=persona.voice_sketch,
@@ -222,6 +228,7 @@ async def run_turn(
                     voice_sketch=persona.voice_sketch,
                     input_text=input_text,
                     history=history,
+                    groups=group_traces,
                 ),
                 max_tokens=cfg.response_max_tokens,
                 temperature=cfg.temp_final,
@@ -265,6 +272,7 @@ async def run_turn(
                     explanation=fit.explanation,
                     bwo_text=bwo_after_text,
                     voice_sketch=persona.voice_sketch,
+                    groups=group_traces,
                 ),
                 max_tokens=cfg.response_max_tokens,
                 temperature=cfg.temp_final,
@@ -280,16 +288,6 @@ async def run_turn(
     state.mode_history = [s.mode for s in syntheses]
 
     # --- build trace ---
-    group_traces = [
-        GroupTrace(
-            members=[m.name for m in g],
-            mode=s.mode,
-            thinking=s.thinking,
-            result=s.result,
-        )
-        for g, s in zip(groups, syntheses)
-    ]
-
     return TurnTrace(
         input_text=input_text,
         response=response.strip(),

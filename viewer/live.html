@@ -516,8 +516,11 @@ const handlers = {
       card.querySelector(".just").textContent = ev.justification || "(none)";
       const ed = card.querySelector(".editlist");
       ed.innerHTML = "";
-      (ev.edits || []).forEach(e =>
-        el("div", "note", ed, "• " + (e.change || "") + "  [" + (e.driven_by || []).join(", ") + "]"));
+      (ev.edits || []).forEach(e => {
+        const note = el("div", "note", ed);
+        el("div", "", note, "• " + (e.change || "") + "  [" + (e.driven_by || []).join(", ") + "]");
+        if (e.why) el("div", "edit-reason", note, e.why);
+      });
     });
   },
   fit_round: ev => {

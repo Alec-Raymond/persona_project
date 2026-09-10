@@ -168,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     _model_arguments(pl)
     pl.add_argument("--port", type=int, default=8765)
     pl.add_argument("--no-browser", action="store_true")
+    pl.add_argument("--resume", help="resume a saved trace directory without rerunning its model calls")
 
     args = parser.parse_args(argv)
     if args.cmd in {"chat", "live"}:
@@ -182,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.cmd == "live":
         from .live import serve
 
-        serve(args.persona, cfg, port=args.port, open_browser=not args.no_browser)
+        serve(args.persona, cfg, port=args.port, open_browser=not args.no_browser, resume_dir=args.resume)
     return 0
 
 

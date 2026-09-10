@@ -43,6 +43,7 @@ function fixture(index = 1) {
     input_text: `Question ${index}`, response: `Final reply ${index}`,
     bwo_before: `State ${index - 1}`, bwo_after: editor.bwo,
     draft_response: editor.response, justification: editor.justification,
+    edits: [{change: 'A concrete state change', driven_by: ['Group 1'], why: 'The group raised a specific concern.'}],
     fired: [['A', 'analysis', 'selected'], ['B', 'analysis', 'selected']],
     machine_outputs: { A: `ANALYSIS\n${analysis}\nPRODUCT\n${product}`, B: 'ANALYSIS\nShort analysis\nPRODUCT\nShort product' },
     groups: [{ members: ['A', 'B'], mode: 'conjunctive', thinking, result }],
@@ -88,6 +89,7 @@ test('every phase finishes before regrouping, refinement, or the final reply', a
   assert.equal(p.$('.editor .surface').textContent, turn.bwo_after);
   assert.equal(p.$('.editor .reply').textContent, turn.draft_response);
   assert.equal(p.$('.editor details.th').open, true);
+  assert.equal(p.$('.edit-reason').textContent, turn.edits[0].why);
 
   p.until(() => p.$('.verdict'));
   assert.equal(p.$('.review').textContent, turn.fit_reviews[0].explanation);

@@ -4,6 +4,8 @@ Persona Project runs conversations with configurable AI characters. It includes 
 
 Each reply passes through several model calls. They select relevant prompts, combine their outputs, update the character's state, and produce a reply. Saved traces show the inputs and outputs at each stage.
 
+The editor, trimming pass, and each rewrite receive the full group syntheses alongside the character's state. The fit checker sees only the conversation and candidate reply. See [how meaning passes between stages](docs/synthesis-context.md).
+
 ## What you can do
 
 - Chat with a character in the terminal or browser.
@@ -45,6 +47,14 @@ persona2 live --backend codex
 ```
 
 Open <http://localhost:8765> if the browser does not open automatically. Each server run holds one conversation.
+
+To continue a saved conversation after restarting the server:
+
+```bash
+persona2 live --backend codex --resume traces/<conversation-directory>
+```
+
+This restores the saved state, messages, machine firing counts, and synthesis modes. It rebuilds the replay without model calls. New turns save to the same directory. Random selection starts with a new generator; resuming does not reproduce an uninterrupted random sequence.
 
 ## Backends and models
 

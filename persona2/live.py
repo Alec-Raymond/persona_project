@@ -67,7 +67,7 @@ class Hub:
 class Session:
     """The conversation: a Runtime on its own asyncio loop thread."""
 
-    def __init__(self, persona_dir: str, cfg: Config) -> None:
+    def __init__(self, persona_dir: str, cfg: Config, resume_dir: str | None = None) -> None:
         self.persona_dir = persona_dir
         self.cfg = cfg
         self.persona = load_persona(persona_dir)
@@ -76,13 +76,30 @@ class Session:
         self.turn_n = 0
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         self.save_dir = _TRACES / f"{self.persona.name}-live-{stamp}"
+        saved_turns = None
+        if resume_dir is not None:
+            self.save_dir = Path(resume_dir).resolve()
+            files = sorted(self.save_dir.glob("turn-*.json"))
+            if not files:
+                raise ValueError("The saved conversation has no turns.")
+            expected = [f"turn-{index:03d}.json" for index in range(1, len(files) + 1)]
+            if [path.name for path in files] != expected:
+                raise ValueError("Saved turn files must be consecutive, starting at turn-001.json.")
+            saved_turns = [json.loads(path.read_text()) for path in files]
         self.loop = asyncio.new_event_loop()
         threading.Thread(target=self.loop.run_forever, daemon=True).start()
-        fut = asyncio.run_coroutine_threadsafe(self._make_runtime(), self.loop)
+        fut = asyncio.run_coroutine_threadsafe(self._make_runtime(saved_turns), self.loop)
         self.rt = fut.result()
+        if saved_turns:
+            self.turn_n = len(saved_turns)
+            self.hub.emit({"type": "session_reset"})
+            for turn in saved_turns:
+                self._replay_turn(turn, paced=False)
         events.set_sink(self.hub.emit)
 
-    async def _make_runtime(self) -> Runtime:
+    async def _make_runtime(self, saved_turns: list[dict] | None = None) -> Runtime:
+        if saved_turns is not None:
+            return Runtime.resume(self.persona, saved_turns, cfg=self.cfg)
         return Runtime.new(self.persona, cfg=self.cfg)
 
     def reset(self) -> bool:
@@ -166,10 +183,11 @@ class Session:
                 self.hub.emit({"type": "call_delta", "id": cid, "text": chunk})
             if not alive:
                 break
-            time.sleep(delay)
+            if delay:
+                time.sleep(delay)
 
-    def _type_out(self, call_id: str, text: str) -> None:
-        self._stream_parallel([(call_id, text)])
+    def _type_out(self, call_id: str, text: str, delay: float = 0.015) -> None:
+        self._stream_parallel([(call_id, text)], delay=delay)
 
     def _replay_worker(self, trace_dir: str) -> None:
         try:
@@ -182,18 +200,20 @@ class Session:
         finally:
             self.busy = False
 
-    def _replay_turn(self, t: dict) -> None:
+    def _replay_turn(self, t: dict, *, paced: bool = True) -> None:
         emit = self.hub.emit
+        pause = time.sleep if paced else lambda _: None
+        stream_delay = 0.015 if paced else 0.0
         emit({"type": "turn_started", "input": t["input_text"],
               "bwo": t["bwo_before"], "replay": True})
         emit({"type": "stage_started", "stage": "selection"})
-        time.sleep(0.2)
+        pause(0.2)
         emit({"type": "selection_done", "fired": [
             {"name": n, "category": self._category(n),
              "sensitivity": self._sensitivity(n), "resonance": res}
             for n, _shape, res in t.get("fired", [])
         ]})
-        time.sleep(0.2)
+        pause(0.2)
         emit({"type": "stage_started", "stage": "machines"})
         machine_streams = []
         for name, out in t.get("machine_outputs", {}).items():
@@ -201,15 +221,15 @@ class Session:
             emit({"type": "call_started", "id": cid, "stage": "machine",
                   "label": name, "model": "", "schema": False})
             machine_streams.append((cid, out))
-        self._stream_parallel(machine_streams)
+        self._stream_parallel(machine_streams, delay=stream_delay)
         for cid, out in machine_streams:
             emit({"type": "call_done", "id": cid, "output": out})
-        time.sleep(0.2)  # the viewer also waits for the display to finish
+        pause(0.2)  # the viewer also waits for the display to finish
         groups = t.get("groups", [])
         emit({"type": "stage_started", "stage": "synthesis"})
         emit({"type": "groups_assigned",
               "groups": [g.get("members", []) for g in groups]})
-        time.sleep(0.65)
+        pause(0.65)
         synth_streams = []
         for g in groups:
             cid = f"synthesis/{' + '.join(g.get('members', []))}"
@@ -219,7 +239,7 @@ class Session:
             synth_streams.append((cid, json.dumps(
                 {"mode": g.get("mode"), "thinking": g.get("thinking", ""),
                  "result": g.get("result", "")})))
-        self._stream_parallel(synth_streams)
+        self._stream_parallel(synth_streams, delay=stream_delay)
         for gi, g in enumerate(groups):
             cid = f"synthesis/{' + '.join(g.get('members', []))}"
             emit({"type": "call_done", "id": cid, "output": g})
@@ -227,7 +247,7 @@ class Session:
                   "members": g.get("members", []), "mode": g.get("mode"),
                   "thinking": g.get("thinking", ""),
                   "result": g.get("result", "")})
-        time.sleep(0.2)
+        pause(0.2)
         emit({"type": "stage_started", "stage": "editor"})
         ed_out = {}
         for c in t.get("calls", []):
@@ -237,21 +257,21 @@ class Session:
         cid = "final/interior-editor"
         emit({"type": "call_started", "id": cid, "stage": "final",
               "label": "interior-editor", "model": "", "schema": True})
-        self._type_out(cid, json.dumps(ed_out) if ed_out else "")
+        self._type_out(cid, json.dumps(ed_out) if ed_out else "", delay=stream_delay)
         emit({"type": "call_done", "id": cid, "output": ed_out})
         emit({"type": "editor_done", "bwo": t.get("bwo_after", ""),
               "edits": t.get("edits", []),
               "response": t.get("draft_response", ""),
               "justification": t.get("justification", ""),
               "revised": False})
-        time.sleep(0.2)
+        pause(0.2)
         emit({"type": "stage_started", "stage": "armor"})
         for r in t.get("fit_reviews", []):
             n = r.get("round", 1)
             cid = "final/armor" if n == 1 else f"final/armor-{n}"
             emit({"type": "call_started", "id": cid, "stage": "final",
                   "label": "armor", "model": "", "schema": False})
-            self._type_out(cid, r.get("response", ""))
+            self._type_out(cid, r.get("response", ""), delay=stream_delay)
             emit({"type": "call_done", "id": cid, "output": r.get("response", "")})
             # Replay the reader and any redraft, which the old player skipped.
             label = f"fit-check-{n}"
@@ -262,7 +282,7 @@ class Session:
             cid = f"final/{label}"
             emit({"type": "call_started", "id": cid, "stage": "final",
                   "label": label, "model": "", "schema": True})
-            self._type_out(cid, json.dumps(review))
+            self._type_out(cid, json.dumps(review), delay=stream_delay)
             emit({"type": "call_done", "id": cid, "output": review})
             emit({"type": "fit_round", "round": n,
                   "response": r.get("response", ""), "fits": r.get("fits"),
@@ -273,10 +293,10 @@ class Session:
                 cid = f"final/redraft-{n}"
                 emit({"type": "call_started", "id": cid, "stage": "final",
                       "label": f"redraft-{n}", "model": "", "schema": False})
-                self._type_out(cid, redraft)
+                self._type_out(cid, redraft, delay=stream_delay)
                 emit({"type": "call_done", "id": cid, "output": redraft})
-            time.sleep(0.15)
-        time.sleep(0.2)
+            pause(0.15)
+        pause(0.2)
         emit({"type": "turn_done", "response": t.get("response", ""),
               "bwo_after": t.get("bwo_after", "")})
 
@@ -337,6 +357,7 @@ class Handler(BaseHTTPRequestHandler):
                 "situation": SESSION.persona.situation,
                 "busy": SESSION.busy,
                 "turn_count": SESSION.turn_n,
+                "run": SESSION.save_dir.name,
             })
         elif self.path == "/export":
             if SESSION.busy:
@@ -394,9 +415,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(persona_dir: str, cfg: Config, port: int = 8765,
-          open_browser: bool = True) -> None:
+          open_browser: bool = True, resume_dir: str | None = None) -> None:
     global SESSION
-    SESSION = Session(persona_dir, cfg)
+    SESSION = Session(persona_dir, cfg, resume_dir=resume_dir)
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
     print(f"live frontend → {url}   (persona: {SESSION.persona.name}, backend: {cfg.backend})")

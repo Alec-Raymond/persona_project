@@ -11,6 +11,16 @@ Stern for rhythm). Quality lives here; expect heavy iteration.
 from __future__ import annotations
 
 from .machine import Machine
+from .trace import GroupTrace
+
+
+def format_synthesis_context(groups: list[GroupTrace]) -> str:
+    """The same complete, named synthesis inputs for every reply-writing step."""
+    return "\n\n".join(
+        f"### Group {i + 1}\nMachines: {', '.join(group.members)}\n"
+        f"Mode: {group.mode}\n\nAnalysis:\n{group.thinking}\n\nResult:\n{group.result}"
+        for i, group in enumerate(groups)
+    )
 
 # --- who is who (shared by every stage that reads the conversation) -----------
 
@@ -122,7 +132,14 @@ You drafted a reply for a simulated persona, and a blind reader — someone \
 who saw only the situation and the conversation, nothing of the persona's \
 interior — judged that it does not fit. You receive their explanation, the \
 conversation, the persona's interior surface (the BwO — its inner state as \
-prose), and the persona's voice. Write a new reply.
+prose), the complete group syntheses, and the persona's voice. Write a new reply.
+
+The syntheses preserve the concrete concerns, distinctions, and competing \
+reactions behind the draft. Read their analysis and results again when \
+rewriting. They remain available even when the surface expresses them \
+indirectly. Repair what failed the fit check without losing the substantive \
+point. These are internal interpretations, not additional facts about the \
+other person. Do not recite their prose or manufacture agreement between them.
 
 {WHO}
 
@@ -144,6 +161,7 @@ def format_redraft_user(
     explanation: str,
     bwo_text: str,
     voice_sketch: str,
+    groups: list[GroupTrace],
 ) -> str:
     return f"""\
 ## The situation
@@ -163,6 +181,9 @@ def format_redraft_user(
 
 ## The persona's interior surface (BwO — speak from it)
 {bwo_text}
+
+## Complete group syntheses for this turn
+{format_synthesis_context(groups)}
 
 ## The persona's voice
 {voice_sketch}
@@ -560,17 +581,10 @@ def format_synthesis_user(
 Choose a mode and synthesize this group."""
 
 
-# --- final stage: three separate processes -----------------------------------
-#
-# The BwO edit, the draft reply, and the armoring are deliberately separate
-# calls with disjoint inputs:
-#   - the BwO editor never sees the voice sketch (voice must not color the
-#     interior),
-#   - the draft responder never sees the BwO or the syntheses (the reply is
-#     continuous with the conversation, not a reading of the interior),
-#   - the armorer bends the finished draft with the interior — lightly,
-#     because a turn's internal processing happens in an instant and most of
-#     it never lands in what gets said.
+# --- final stage: editor, trimming, fit check, and optional rewrites -----------
+# The editor writes the state and first reply. Every reply-writing step gets
+# the complete group syntheses, state, conversation, and voice. The fit checker
+# judges the candidate from the situation and conversation alone.
 
 BWO_EDIT_SYSTEM = f"""\
 You are the interior editor of a simulated persona — the stage where \
@@ -581,8 +595,10 @@ currents; you hold those currents (each with its own thinking and its \
 woven result), the conversation, the persona's interior surface as it \
 stands (the BwO — one passage of intensive prose that IS the persona's \
 inner state), and the persona's voice. Downstream, an armoring stage will \
-cut your reply to what actually gets said. It sees your new surface and \
-your reply — NOT your thinking, and nothing else you were given.
+cut your reply to what actually gets said. It sees your new surface, your \
+reply, the conversation, and the same group syntheses. It does not see your \
+editor thinking or edit log. Future turns still depend on the surface to \
+carry forward the specific concerns that remain relevant.
 
 {WHO}
 
@@ -596,8 +612,8 @@ stands. Roam: what actually moved this turn, what collided, what the \
 persona wants here and will not say, where the relation with this stranger \
 stands now, what kind of reply would be alive rather than adequate. \
 Abstract is welcome; anchor every thread to its concrete referent (the \
-place, the object, the phrase that landed), because nothing outside your \
-own sentences travels with your text.
+place, the object, the phrase that landed). Make each thread understandable \
+without requiring its reader to reconstruct the source inputs.
 
 2. bwo — the EDITED interior surface, about 500 words of showing-mode \
 intensive prose (sensory, indirect, the unnamed texture of experience). \
@@ -671,15 +687,11 @@ stands, leave this empty; most turns it stays empty."""
 def format_bwo_edit_user(
     *,
     bwo_text: str,
-    groups: list[tuple[str, str]],
+    groups: list[GroupTrace],
     input_text: str,
     history: str,
     voice_sketch: str,
 ) -> str:
-    groups_block = "\n\n".join(
-        f"### Group {i + 1}\nTheir thinking:\n{think}\n\nTheir woven result:\n{res}"
-        for i, (think, res) in enumerate(groups)
-    )
     return f"""\
 ## Conversation so far
 {history}
@@ -691,7 +703,7 @@ def format_bwo_edit_user(
 {bwo_text}
 
 ## Interior currents this turn (each synthesizer's thinking and result)
-{groups_block}
+{format_synthesis_context(groups)}
 
 ## The persona's voice (governs ONLY the response, never the surface)
 {voice_sketch}
@@ -724,7 +736,7 @@ third moves, coverage of every angle, framing clauses, questions asked out \
 of politeness, therapy-voice validation ("that makes sense", "I hear you", \
 "that's understandable"), any sentence answering what nobody asked. Cut it.
 
-Two things guide what survives:
+Three things guide what survives:
 - The RHYTHM of the conversation. Read the exchange itself: conversations \
 build, ebb, and flow. Early with a stranger, little is given and the spark \
 alone is usually the whole reply; as the other person gives more and the \
@@ -735,6 +747,11 @@ tells you where the persona actually is: what it would give right now and \
 what it would hold back. A reply that gives what the surface is holding, \
 or withholds what the surface is reaching with, rings false — let the \
 surface tune WHICH parts survive, never inject its imagery into speech.
+- The GROUP SYNTHESES. Their analysis and results retain the concrete meaning \
+behind the draft. Use them to recognize what a cut would remove, especially \
+when the surface expresses a concern indirectly. Preserve the draft's \
+substantive distinction, reservation, or question. They do not authorize \
+adding new sentences, asserting an interpretation as fact, or reciting the machinery.
 
 The result must FLOW. What survives is speech: it has to sound like \
 something a person would actually say, whole, in one breath of ordinary \
@@ -762,6 +779,7 @@ def format_armor_user(
     voice_sketch: str,
     input_text: str,
     history: str,
+    groups: list[GroupTrace],
 ) -> str:
     return f"""\
 ## Conversation so far (read its rhythm — how far has this exchange built?)
@@ -778,6 +796,9 @@ def format_armor_user(
 
 ## Interior surface after this turn (BwO)
 {bwo_text}
+
+## Complete group syntheses for this turn
+{format_synthesis_context(groups)}
 
 ---
 Find the spark, cut the chaff. The conversation's rhythm sets the size; \
