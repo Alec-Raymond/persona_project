@@ -13,8 +13,6 @@ html = html.replace('<button id="newBtn">New chat</button>', '<button id="newBtn
 html = html.replace('>Export conversation</button>', '>Export</button>');
 html = html.replace('  <div id="transcript"></div>', `  <div id="turnBar"><button id="previousBtn" aria-label="Previous turn">←</button><select id="turnSel" aria-label="Turn"></select><button id="nextBtn" aria-label="Next turn">→</button><button id="pauseBtn">Pause</button></div>\n  <div id="transcript"></div>`);
 html = html.replace(/  <div id="composer">[\s\S]*?<\/div>/, `  <div id="composer"><button id="send" hidden></button><button id="openBtn">Open file</button><input id="fileInput" type="file" accept=".json,application/json" multiple hidden><a href="https://github.com/Alec-Raymond/persona_project">GitHub</a></div>`);
-// Pause only in the hosted player. Normal playback retains the original drain rate.
-html = html.replace('setInterval(() => {', 'setInterval(() => {\n  if (globalThis.personaReplayView?.paused) return;');
 html = html.replace('</style>', `\n#turnBar{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line)}
 #turnBar button,#turnBar select{font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;cursor:pointer}
 #turnSel{flex:1;min-width:0}#composer{align-items:center;justify-content:space-between;min-height:60px}
@@ -23,19 +21,6 @@ html = html.replace('</style>', `\n#turnBar{display:flex;gap:6px;padding:8px 16p
 @media(max-width:760px){body{grid-template-columns:1fr;grid-template-rows:44vh 56vh}#chat,#pipe{height:100%;min-height:0}#pipe{padding:18px 16px}.groupcol{min-width:min(320px,100%)}}
 </style>`);
 html += `
-globalThis.personaReplayView = {
-  paused: false,
-  emit: ev => (handlers[ev.type] || (() => {}))(ev),
-  clear: () => { clearAll(); shown = {}; doneQ = {}; setBusy(false); },
-  addMessage: addMsg,
-  setStatus,
-  setName: name => {
-    personaName = name.charAt(0).toUpperCase() + name.slice(1);
-    $("#pname").textContent = personaName;
-    $("#modelInfo").textContent = "Astra";
-    document.title = personaName + " · Conversation replay";
-  },
-};
 </script>
 <script type="module" src="./replay-page.js"></script>
 </body>

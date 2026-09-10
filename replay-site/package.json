@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.13.0" },
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
   "scripts": {
     "prebuild": "node scripts/check-selected.mjs",
     "build": "node scripts/build-replay.mjs",
     "dev": "node scripts/serve-replay.mjs",
     "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
   }
 }

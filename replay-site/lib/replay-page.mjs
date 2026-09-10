@@ -17,6 +17,9 @@ function controls() {
   $('#pauseBtn').textContent = view.paused ? 'Resume' : 'Pause';
   $('#pauseBtn').setAttribute('aria-pressed', String(view.paused));
 }
+view.onBusyChange = controls;
+view.onTurnSelected = index => { turnIndex = index; $('#turnSel').value = String(index); controls(); };
+view.onTurnRequest = index => void play(index, true);
 function stop() {
   playback?.abort(); playback = null; view.paused = false;
   view.clear(); controls();
@@ -50,8 +53,8 @@ async function play(start = 0, single = false) {
   stop();
   const run = current(); if (!run) return;
   const controller = new AbortController(); playback = controller;
-  for (const turn of run.turns.slice(0, start)) {
-    view.addMessage('you', turn.input_text); view.addMessage('persona', turn.response);
+  for (const [index, turn] of run.turns.slice(0, start).entries()) {
+    view.addMessage('you', turn.input_text, index); view.addMessage('persona', turn.response, index);
   }
   const sleep = async ms => {
     await timer(ms, controller.signal);
@@ -66,9 +69,10 @@ async function play(start = 0, single = false) {
         sleep,
         emit: event => {
           if (controller.signal.aborted) throw new DOMException('Stopped', 'AbortError');
-          view.emit(event); controls();
+          view.emit(event.type === 'turn_started' ? { ...event, index } : event); controls();
         },
       });
+      await view.whenIdle(controller.signal);
     }
     view.setStatus(`Turn ${turnIndex + 1} of ${run.turns.length}`);
   } catch (error) {
@@ -89,11 +93,14 @@ async function openFiles(files) {
 $('#openBtn').onclick = () => $('#fileInput').click();
 $('#fileInput').onchange = event => void openFiles(event.target.files);
 $('#traceSel').onchange = event => choose(Number(event.target.value));
-$('#turnSel').onchange = event => void play(Number(event.target.value), true);
+function inspectTurn(index) {
+  if (!view.showTurn(index)) void play(index, true);
+}
+$('#turnSel').onchange = event => inspectTurn(Number(event.target.value));
 $('#replayBtn').onclick = () => void play(turnIndex);
 $('#newBtn').onclick = () => choose(selected);
-$('#previousBtn').onclick = () => void play(turnIndex - 1, true);
-$('#nextBtn').onclick = () => void play(turnIndex + 1, true);
+$('#previousBtn').onclick = () => inspectTurn(turnIndex - 1);
+$('#nextBtn').onclick = () => inspectTurn(turnIndex + 1);
 $('#pauseBtn').onclick = () => { view.paused = !view.paused; controls(); };
 $('#exportBtn').onclick = () => {
   const run = current(); if (!run) return;

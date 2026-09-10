@@ -146,11 +146,12 @@ class Session:
         return re.findall(r"\S+\s*", text)
 
     def _stream_parallel(
-        self, streams: list[tuple[str, str]], words_per_tick: int = 2,
-        delay: float = 0.03,
+        self, streams: list[tuple[str, str]], words_per_tick: int = 4,
+        delay: float = 0.015,
     ) -> None:
         """Type several call streams at once, a few words per tick each —
-        replayed machines write in parallel, at reading speed."""
+        replayed machines write in parallel; the viewer waits for all text
+        to finish drawing before it advances to the next stage."""
         toks = {cid: self._tokens(t) for cid, t in streams}
         pos = {cid: 0 for cid, _ in streams}
         while True:
@@ -168,7 +169,7 @@ class Session:
             time.sleep(delay)
 
     def _type_out(self, call_id: str, text: str) -> None:
-        self._stream_parallel([(call_id, text)], words_per_tick=3, delay=0.03)
+        self._stream_parallel([(call_id, text)])
 
     def _replay_worker(self, trace_dir: str) -> None:
         try:
@@ -186,13 +187,13 @@ class Session:
         emit({"type": "turn_started", "input": t["input_text"],
               "bwo": t["bwo_before"], "replay": True})
         emit({"type": "stage_started", "stage": "selection"})
-        time.sleep(0.8)
+        time.sleep(0.2)
         emit({"type": "selection_done", "fired": [
             {"name": n, "category": self._category(n),
              "sensitivity": self._sensitivity(n), "resonance": res}
             for n, _shape, res in t.get("fired", [])
         ]})
-        time.sleep(0.8)
+        time.sleep(0.2)
         emit({"type": "stage_started", "stage": "machines"})
         machine_streams = []
         for name, out in t.get("machine_outputs", {}).items():
@@ -203,12 +204,12 @@ class Session:
         self._stream_parallel(machine_streams)
         for cid, out in machine_streams:
             emit({"type": "call_done", "id": cid, "output": out})
-        time.sleep(1.2)  # let the last words land before the regroup
+        time.sleep(0.2)  # the viewer also waits for the display to finish
         groups = t.get("groups", [])
         emit({"type": "stage_started", "stage": "synthesis"})
         emit({"type": "groups_assigned",
               "groups": [g.get("members", []) for g in groups]})
-        time.sleep(1.0)
+        time.sleep(0.65)
         synth_streams = []
         for g in groups:
             cid = f"synthesis/{' + '.join(g.get('members', []))}"
@@ -226,7 +227,7 @@ class Session:
                   "members": g.get("members", []), "mode": g.get("mode"),
                   "thinking": g.get("thinking", ""),
                   "result": g.get("result", "")})
-        time.sleep(0.8)
+        time.sleep(0.2)
         emit({"type": "stage_started", "stage": "editor"})
         ed_out = {}
         for c in t.get("calls", []):
@@ -243,7 +244,7 @@ class Session:
               "response": t.get("draft_response", ""),
               "justification": t.get("justification", ""),
               "revised": False})
-        time.sleep(0.8)
+        time.sleep(0.2)
         emit({"type": "stage_started", "stage": "armor"})
         for r in t.get("fit_reviews", []):
             n = r.get("round", 1)
@@ -252,11 +253,30 @@ class Session:
                   "label": "armor", "model": "", "schema": False})
             self._type_out(cid, r.get("response", ""))
             emit({"type": "call_done", "id": cid, "output": r.get("response", "")})
+            # Replay the reader and any redraft, which the old player skipped.
+            label = f"fit-check-{n}"
+            review = next((c.get("output") for c in t.get("calls", [])
+                           if c.get("label") == label), None) or {
+                "explanation": r.get("explanation", ""), "fits": r.get("fits"),
+            }
+            cid = f"final/{label}"
+            emit({"type": "call_started", "id": cid, "stage": "final",
+                  "label": label, "model": "", "schema": True})
+            self._type_out(cid, json.dumps(review))
+            emit({"type": "call_done", "id": cid, "output": review})
             emit({"type": "fit_round", "round": n,
                   "response": r.get("response", ""), "fits": r.get("fits"),
                   "explanation": r.get("explanation", "")})
-            time.sleep(0.6)
-        time.sleep(0.6)
+            redraft = next((c.get("output") for c in t.get("calls", [])
+                            if c.get("label") == f"redraft-{n}"), None)
+            if redraft is not None:
+                cid = f"final/redraft-{n}"
+                emit({"type": "call_started", "id": cid, "stage": "final",
+                      "label": f"redraft-{n}", "model": "", "schema": False})
+                self._type_out(cid, redraft)
+                emit({"type": "call_done", "id": cid, "output": redraft})
+            time.sleep(0.15)
+        time.sleep(0.2)
         emit({"type": "turn_done", "response": t.get("response", ""),
               "bwo_after": t.get("bwo_after", "")})
 

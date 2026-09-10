@@ -76,6 +76,8 @@ The [Conversations website](https://alec-raymond.github.io/persona_project/) run
 
 The website reads opened files in the browser without uploading them. It shows the transcript, parallel machine streams, animated grouping, syntheses, state changes, drafts, and fit reviews. The exported JSON retains the full recorded calls. Exports require Astra for every call and continuous state across turns. See [replay-site/README.md](replay-site/README.md) to select conversations for publication.
 
+Each replay stage finishes drawing before the next begins. Analysis and results stay visible. Click an earlier message to inspect that turn's reply and machine outputs.
+
 After installing the project, these commands work without model credentials:
 
 ```bash

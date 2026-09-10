@@ -65,7 +65,8 @@ def test_hosted_replay_matches_every_local_event_and_delay(monkeypatch):
                     "thinking": "Two outputs — one group.", "result": "Keep the pause."}],
         "calls": [{"label": "interior-editor", "output": {
             "thinking": "Quoted \"words\" and an emoji 🙂", "bwo": "after", "response": "First draft",
-        }}],
+        }}, {"label": "fit-check-1", "output": {"explanation": "Too much.", "fits": False}},
+          {"label": "redraft-1", "output": "A revised draft before the second armor pass."}],
         "edits": [{"change": "A detail", "driven_by": ["Shame"]}],
         "fit_reviews": [
             {"round": 1, "response": "First reply", "fits": False, "explanation": "Too much."},
@@ -73,4 +74,10 @@ def test_hosted_replay_matches_every_local_event_and_delay(monkeypatch):
         ],
     }
     persona = load_persona(_default_persona())
-    assert capture_hosted(turn, persona) == capture_local(turn, persona, monkeypatch)
+    hosted = capture_hosted(turn, persona)
+    assert hosted == capture_local(turn, persona, monkeypatch)
+    completed = {item["event"]["id"]: item["event"]["output"] for item in hosted
+                 if item["event"]["type"] == "call_done"}
+    assert completed["final/fit-check-1"] == {"explanation": "Too much.", "fits": False}
+    assert completed["final/redraft-1"] == "A revised draft before the second armor pass."
+    assert completed["final/fit-check-2"] == {"explanation": "Fits.", "fits": True}

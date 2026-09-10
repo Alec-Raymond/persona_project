@@ -6,6 +6,9 @@ A static page using the live viewer's tuned machine replay. It shows the paralle
 text streams, animated grouping, syntheses, drafts, fit reviews, and final replies.
 The build copies the renderer from `viewer/live.html`; it does not maintain a second UI.
 The browser reproduces the Python player's event sequence and delays. It makes no model calls.
+Text draws at about 900 characters per second per call. Stage transitions wait until
+all current text finishes. Analysis and results stay open, including after grouping.
+Fit reviews and recorded redrafts also replay in full.
 Opened conversation files stay in browser memory. The page does not upload them.
 The initial selected collection is empty, pending conversations recorded by Alec.
 
@@ -17,8 +20,9 @@ The initial selected collection is empty, pending conversations recorded by Alec
 4. Click **Open file** on the replay page and choose the exported JSON.
 5. Click **Replay**.
 
-Pause stops the animation. The turn selector and arrows replay a particular turn.
-Earlier messages remain visible in the transcript.
+Pause stops text and transitions. Click an earlier message to inspect that turn's
+reply and machine outputs. The turn selector and arrows also open completed turns;
+unplayed turns replay when selected. Earlier messages remain in the transcript.
 
 ## Select a conversation for publication
 
@@ -49,11 +53,14 @@ npm run build
 ```
 
 The build uses relative asset paths, so the same files work under the repository's
-GitHub Pages path and on localhost. It needs Node.js and no third-party packages.
+GitHub Pages path and on localhost. The build needs Node.js. DOM tests use jsdom;
+the published page has no third-party runtime dependencies.
 The [Pages workflow](../.github/workflows/pages.yml) tests, builds, and publishes it.
 
 `tests/test_replay_parity.py` compares every hosted replay event and timestamp with
-the Python player. Four existing saved turns also match across 4,335 events.
+the Python player. `tests/replay-renderer.test.mjs` runs the shared renderer against
+long recorded outputs. It checks stage completion, both phases, pause, cancellation,
+consecutive turns, and inspection of earlier messages.
 
 The build exports static files to `dist/client`. Only explicitly selected JSON
 files ship with the page. All other experiment traces stay outside this project.

@@ -34,6 +34,9 @@ h1{font-size:15px;margin:0}
   border-bottom-left-radius:3px}
 .msg .who{font-size:10px;color:var(--muted);margin-bottom:2px;
   text-transform:uppercase;letter-spacing:.06em}
+.msg[role="button"]{cursor:pointer}
+.msg[aria-pressed="true"]{outline:2px solid #b7a8df;outline-offset:2px}
+.msg[role="button"]:focus-visible{outline:2px solid var(--accent)}
 #composer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
 #composer textarea{flex:1;resize:none;height:60px;padding:8px;font:inherit;
   border:1px solid var(--line);border-radius:8px;background:#fff}
@@ -53,12 +56,15 @@ h1{font-size:15px;margin:0}
 .waiting{font-size:12px;color:var(--muted);font-style:italic}
 
 /* machine bubbles */
-#mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .bubble{background:var(--card);border:1px solid var(--line);border-radius:10px;
   padding:10px 12px;overflow:hidden;animation:pop .35s ease;
   transition:padding .4s ease,background .4s ease}
 @keyframes pop{from{transform:scale(.7);opacity:0}}
 .bubble h3{margin:0;font-size:13px;display:flex;gap:6px;align-items:center}
+.bubble .collapse{margin-left:auto;border:0;background:none;color:var(--muted);
+  font:inherit;font-size:10px;cursor:pointer}
+.phase-label{color:var(--muted);font-size:11px;margin:8px 0 3px}
 .chip{font-size:10px;background:var(--chip);border-radius:8px;padding:1px 7px;
   color:var(--muted)}
 .bubble .sens{font-size:11px;color:var(--muted);margin:3px 0 8px;
@@ -70,7 +76,8 @@ h1{font-size:15px;margin:0}
 details.compact{font-size:12px;margin:4px 0}
 details.compact>summary{cursor:pointer;color:var(--muted);font-size:11px;
   user-select:none}
-.bubble.shrunk .stream,.bubble.shrunk details,.bubble.shrunk .sens{display:none}
+.bubble.shrunk .stream,.bubble.shrunk details,.bubble.shrunk .sens,
+.bubble.shrunk .phase-label{display:none}
 .bubble.shrunk{padding:6px 10px;background:#fbfaf6}
 .bubble.shrunk h3{font-size:12px}
 .bubble .conclusion{font-size:11px;color:var(--muted);display:none;
@@ -106,13 +113,13 @@ details.compact>summary{cursor:pointer;color:var(--muted);font-size:11px;
 .panel.reply{border-left-color:#9c9}
 .verdict{font-weight:700;font-size:12px}
 .verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)}
-#finalreply{font-size:16px;background:#eef7ee;border:1px solid #cfe6cf;
+.finalreply{font-size:16px;background:#eef7ee;border:1px solid #cfe6cf;
   border-radius:12px;padding:16px 20px;max-width:720px;white-space:pre-wrap;
   animation:pop .4s ease}
 .err{background:#fbe9e5;border:1px solid #eac4bb;color:var(--bad);
   border-radius:8px;padding:10px 14px;margin:10px 0;font-size:12px}
 .note{font-size:11px;color:var(--muted)}
-.done-dim .stage:not(:last-child){opacity:.78}
+.turn-view.done-dim .stage:not(:last-child){opacity:.78}
 </style>
 </head>
 <body>
@@ -142,43 +149,108 @@ const $ = s => document.querySelector(s);
 const pipe = $("#pipe");
 let personaName = "Sam";
 
-/* Presentation names and descriptions — what each step does in general. */
+/* Short display descriptions. Model instructions stay in the persona files. */
 const STAGES = {
-  selection:["Selection",
-    "The incoming moment is read — including what it implies but doesn't state — and the machines most responsive to it are woken. A few core processes always run."],
-  machines:["Desiring machines",
-    "Independent inner processes running in parallel. Each one reads the moment through a single narrow sensitivity and works out its own reaction to it."],
-  synthesis:["Synthesis",
-    "The machines' reactions are gathered into small groups, and each group is woven into one combined current of the persona's inner life."],
-  editor:["Interior update",
-    "The persona's inner state — a continuous written surface — is edited to absorb what just happened, and a draft reply is spoken from it."],
-  armor:["Refinement & fit",
-    "The draft is pared down to what a person would actually say. An independent reader, shown only the conversation, judges whether the reply fits; if not, it is redrafted."],
+  selection:["Selection", "Choose relevant machines."],
+  machines:["Machines", "Analyze the message in parallel."],
+  synthesis:["Synthesis", "Combine each group's outputs."],
+  editor:["Interior update", "Update state and draft a reply."],
+  armor:["Refinement & fit", "Revise the reply and check its fit."],
+};
+const MACHINE_DESCRIPTIONS = {
+  Compensator: "Balances one-sided reactions.",
+  Situation: "Checks what suits the relationship.",
+  Pulsation: "Sets the pace and reply length.",
+  Laetitia: "Responds to new possibilities.",
+  Cupiditas: "Follows what Sam wants.",
+  Tristitia: "Responds to loss and disappointment.",
+  Hope: "Anticipates a good outcome.",
+  Glory: "Responds to praise and recognition.",
+  Fear: "Anticipates rejection or distance.",
+  Shame: "Responds to feeling exposed.",
+  Longing: "Reaches toward someone or something absent.",
+  Implication: "Notices what the words imply.",
+  Memento: "Responds to endings and mortality.",
+  Hesitation: "Notices pauses, evasions, and rehearsed answers.",
+  "Register-shift": "Tracks changes in tone and closeness.",
+  "Memory-generator": "Brings a memory into the moment.",
+  Fantasy: "Imagines a wanted or feared scene.",
+  Inflate: "Covers uncertainty with extra confidence.",
+  Appease: "Smooths friction to stay liked.",
+  Withhold: "Pulls back under pressure.",
 };
 let buffers = {}, machineEls = {}, groupEls = [], stageEls = {}, busy = false;
 let armorRounds = {}, shown = {}, doneQ = {};
+let turnPanels = new Map(), turnPanel = null, currentTurn = -1, selectedTurn = -1, followLatest = true;
+let eventQueue = [], holdMs = 0;
+const idleWaiters = new Set();
 const txt = id => (buffers[id] || "").slice(0, shown[id] || 0);
 
-/* Typewriter drain: network deltas land in buffers; the screen advances at
-   a steady rate, catching up gently when behind — no bursts, no snapping. */
+/* Network/replay clocks can run ahead. Boundaries wait for the display,
+   while calls within a stage keep streaming in parallel. */
+function hasUnpaintedText(){
+  return Object.keys(doneQ).length > 0 || Object.entries(buffers).some(
+    ([id, text]) => (shown[id] || 0) < text.length);
+}
+function needsCompletedText(ev){
+  return ["stage_started", "groups_assigned", "fit_round", "turn_done", "turn_started"].includes(ev.type)
+    || (ev.type === "call_started" && /^final\/(armor|fit-check|redraft)/.test(ev.id));
+}
+function playbackIdle(){ return !eventQueue.length && !holdMs && !hasUnpaintedText(); }
+function settleIdle(){
+  if (playbackIdle()) for (const done of [...idleWaiters]) done();
+}
+function processEvents(){
+  if (globalThis.personaReplayView?.paused) return;
+  while (eventQueue.length && !holdMs){
+    const ev = eventQueue[0];
+    if (needsCompletedText(ev) && hasUnpaintedText()) break;
+    eventQueue.shift();
+    (handlers[ev.type] || (() => {}))(ev);
+    if (ev.type === "groups_assigned") holdMs = 650;
+    if (ev.type === "turn_done") holdMs = 900;
+  }
+  settleIdle();
+}
+function receiveEvent(ev){
+  if (ev.type === "session_reset") clearAll();
+  eventQueue.push(ev);
+  processEvents();
+}
 setInterval(() => {
+  if (globalThis.personaReplayView?.paused) return;
+  holdMs = Math.max(0, holdMs - 33);
   let moved = false;
   for (const id in buffers){
     const full = buffers[id], s = shown[id] || 0;
     if (s < full.length){
       moved = true;
-      const lag = full.length - s;
-      shown[id] = s + Math.max(2, Math.min(70, Math.ceil(lag / 25)));
+      // 900 characters/second per call, without the old slow trailing tail.
+      shown[id] = Math.min(full.length, s + 30);
       route(id);
-    } else if (doneQ[id]){
-      const fn = doneQ[id]; delete doneQ[id]; fn();
+    }
+    if ((shown[id] || 0) >= full.length && doneQ[id]){
+      const callbacks = doneQ[id]; delete doneQ[id];
+      callbacks.forEach(fn => fn());
     }
   }
   if (moved) followPipe();
+  processEvents();
 }, 33);
 function scheduleDone(id, fn){
   if ((shown[id] || 0) >= (buffers[id] || "").length) fn();
-  else doneQ[id] = fn;
+  else (doneQ[id] ||= []).push(fn);
+}
+function whenIdle(signal){
+  return new Promise((resolve, reject) => {
+    const cleanup = () => { idleWaiters.delete(done); signal?.removeEventListener("abort", cancel); };
+    const done = () => { cleanup(); resolve(); };
+    const cancel = () => { cleanup(); reject(new DOMException("Stopped", "AbortError")); };
+    if (signal?.aborted) { cancel(); return; }
+    if (playbackIdle()) { resolve(); return; }
+    idleWaiters.add(done);
+    signal?.addEventListener("abort", cancel, {once:true});
+  });
 }
 
 /* Follow the pipeline only while the user is near the bottom. */
@@ -186,7 +258,7 @@ let follow = true;
 pipe.addEventListener("scroll", () => {
   follow = pipe.scrollHeight - pipe.scrollTop - pipe.clientHeight < 220;
 });
-function followPipe(){ if (follow) pipe.scrollTop = pipe.scrollHeight; }
+function followPipe(){ if (follow && selectedTurn === currentTurn) pipe.scrollTop = pipe.scrollHeight; }
 
 function el(tag, cls, parent, text){
   const e = document.createElement(tag);
@@ -198,24 +270,48 @@ function el(tag, cls, parent, text){
 function setStatus(t){ $("#status").textContent = t; }
 function setBusy(b){ busy = b; $("#send").disabled = b;
   $("#replayBtn").disabled = b; $("#newBtn").disabled = b;
-  $("#exportBtn").disabled = b; }
-function addMsg(who, text){
+  $("#exportBtn").disabled = b;
+  globalThis.personaReplayView?.onBusyChange?.(); }
+function showTurn(index){
+  if (!turnPanels.has(index)) return false;
+  selectedTurn = index; followLatest = index === currentTurn;
+  for (const [number, panel] of turnPanels) panel.hidden = number !== index;
+  for (const message of $("#transcript").querySelectorAll("[data-turn]"))
+    message.setAttribute("aria-pressed", String(Number(message.dataset.turn) === index));
+  pipe.scrollTop = 0;
+  globalThis.personaReplayView?.onTurnSelected?.(index);
+  return true;
+}
+function addMsg(who, text, index = currentTurn){
   const mine = who === "you";
   const m = el("div", "msg " + (mine ? "us" : "them"), $("#transcript"));
   el("div", "who", m, mine ? "you" : personaName);
   el("div", "", m, text);
+  m.dataset.turn = String(index);
+  m.setAttribute("role", "button"); m.tabIndex = 0;
+  m.setAttribute("aria-label", "View turn " + (index + 1));
+  m.setAttribute("aria-pressed", String(index === selectedTurn));
+  m.onclick = () => {
+    if (!showTurn(index)) globalThis.personaReplayView?.onTurnRequest?.(index);
+  };
+  m.onkeydown = event => {
+    if (event.key === "Enter" || event.key === " "){ event.preventDefault(); m.click(); }
+  };
   $("#transcript").scrollTop = 1e9;
 }
 function clearAll(){
   $("#transcript").innerHTML = "";
   pipe.innerHTML = "";
   buffers = {}; machineEls = {}; groupEls = []; stageEls = {}; armorRounds = {};
+  shown = {}; doneQ = {}; eventQueue = []; holdMs = 0;
+  turnPanels = new Map(); turnPanel = null; currentTurn = -1; selectedTurn = -1; followLatest = true;
   document.body.classList.remove("done-dim");
   setStatus("");
+  settleIdle();
 }
 function stageSection(name){
   if (stageEls[name]) return stageEls[name];
-  const s = el("section", "stage", pipe);
+  const s = el("section", "stage", turnPanel);
   const [title, sub] = STAGES[name] || [name, ""];
   el("h2", "", s, title);
   el("div", "sub", s, sub);
@@ -244,30 +340,34 @@ function jsonField(buf, key){
   }
   return out;
 }
-const PRODUCT_RE = /(?:^|\n)\s*#{0,3}\s*\**PRODUCT\**\s*:?\s*(?:\n|$)/;
+const PRODUCT_RE = /(?:^|\n)\s*#{0,3}\s*\**PRODUCT\**\s*:?\s*(?:\n|$)/i;
 
 function machinesStage(){
   const s = stageSection("machines");
-  if (!s.querySelector("#mgrid")) el("div", "", s, "").id = "mgrid";
+  if (!s.querySelector(".mgrid")) el("div", "mgrid", s);
   return s;
 }
 function machineBubble(m){
   machinesStage();
-  const b = el("div", "bubble typing", $("#mgrid"));
+  const b = el("div", "bubble typing", machinesStage().querySelector(".mgrid"));
   b.dataset.name = m.name;
   const h = el("h3", "", b, m.name + " ");
   el("span", "chip", h, m.category);
-  el("div", "sens", b, m.sensitivity || "");
+  const collapse = el("button", "collapse", h, "Collapse");
+  collapse.setAttribute("aria-expanded", "true");
+  collapse.onclick = () => {
+    const collapsed = b.classList.toggle("shrunk");
+    collapse.textContent = collapsed ? "Expand" : "Collapse";
+    collapse.setAttribute("aria-expanded", String(!collapsed));
+  };
+  el("div", "sens", b, MACHINE_DESCRIPTIONS[m.name] || "Adds a response from this perspective.");
   const d = el("details", "compact", b);
-  el("summary", "", d, "internal analysis");
+  el("summary", "", d, "Analysis");
   d.open = true;
   el("div", "stream ana", d);
+  el("div", "phase-label", b, "Product");
   el("div", "stream prod", b);
   el("div", "conclusion", b);
-  b.onclick = () => {
-    if (b.parentElement && b.parentElement.classList.contains("groupbox"))
-      b.classList.toggle("shrunk");
-  };
   machineEls[m.name] = b;
   return b;
 }
@@ -279,17 +379,23 @@ function renderMachine(name){
   if (m){
     ana.textContent = buf.slice(0, m.index);
     prod.textContent = buf.slice(m.index + m[0].length);
-    b.querySelector("details").open = false;
   } else {
     ana.textContent = buf;
   }
   (m ? prod : ana).scrollTop = 1e9;
 }
 
-function resetTurn(inputText, replay){
+function resetTurn(inputText, replay, index = currentTurn + 1){
   buffers = {}; machineEls = {}; groupEls = []; stageEls = {};
   armorRounds = {}; shown = {}; doneQ = {};
-  pipe.innerHTML = "";
+  currentTurn = index;
+  turnPanel = el("div", "turn-view", pipe);
+  turnPanel.dataset.turn = String(index);
+  el("div", "turnhdr", turnPanel, "Turn " + (index + 1));
+  turnPanels.get(index)?.remove();
+  turnPanels.set(index, turnPanel);
+  turnPanel.hidden = true;
+  if (followLatest) showTurn(index);
   follow = true;
   document.body.classList.remove("done-dim");
   addMsg("you", inputText);
@@ -299,7 +405,7 @@ function resetTurn(inputText, replay){
 
 const handlers = {
   session_reset: () => { clearAll(); setBusy(false); loadTraces(); },
-  turn_started: ev => resetTurn(ev.input, ev.replay),
+  turn_started: ev => resetTurn(ev.input, ev.replay, ev.index),
   stage_started: ev => {
     if (STAGES[ev.stage]) stageSection(ev.stage);
     if (ev.stage === "selection"){
@@ -315,7 +421,7 @@ const handlers = {
     ev.fired.forEach(m => {
       const r = el("div", "selrow", list);
       el("b", "", r, m.name);
-      el("span", "", r, " — " + (m.resonance || ""));
+      el("span", "", r, ": " + (m.resonance || ""));
     });
     machinesStage();
     ev.fired.forEach(machineBubble);
@@ -328,6 +434,9 @@ const handlers = {
     buffers[ev.id] = (buffers[ev.id] || "") + ev.text;
   },
   call_done: ev => {
+    // Some transports provide a completed output without token deltas.
+    if (!buffers[ev.id] && ev.output != null)
+      buffers[ev.id] = typeof ev.output === "string" ? ev.output : JSON.stringify(ev.output);
     scheduleDone(ev.id, () => {
       if (ev.id.startsWith("machine/")){
         const name = ev.id.slice(8), b = machineEls[name];
@@ -348,10 +457,10 @@ const handlers = {
     // boxes, then animate from the old position to the new one.
     const before = new Map(
       Object.entries(machineEls).map(([n, b]) => [n, b.getBoundingClientRect()]));
-    // Regroup INSIDE the machines stage — its header stays; the synthesis
+    // Regroup inside the machines stage. Its header stays; the synthesis
     // stage gets one aligned column per group, arrow at the top.
     const ms = machinesStage();
-    const grid = ms.querySelector("#mgrid"); if (grid) grid.remove();
+    const grid = ms.querySelector(".mgrid"); if (grid) grid.remove();
     const grow = el("div", "grouprow", ms);
     const s = stageSection("synthesis");
     const srow = el("div", "grouprow", s);
@@ -361,16 +470,17 @@ const handlers = {
       el("div", "glabel", box, "group " + (i + 1));
       members.forEach(n => {
         const b = machineEls[n];
-        if (b){ b.classList.add("shrunk"); box.appendChild(b); }
+        if (b) box.appendChild(b);
       });
       const scol = el("div", "groupcol", srow);
       el("div", "arrow", scol);
       const c = el("div", "card synth", scol);
-      const h = el("h3", "", c, "synthesizer — group " + (i + 1) + " ");
+      const h = el("h3", "", c, "Group " + (i + 1) + " ");
       el("span", "badge mode", h, "…");
       const d = el("details", "compact", c);
-      el("summary", "", d, "internal reasoning"); d.open = true;
+      el("summary", "", d, "Analysis"); d.open = true;
       el("div", "stream think", d);
+      el("div", "phase-label", c, "Result");
       el("div", "stream result", c);
       groupEls.push({members, card: c});
     });
@@ -396,13 +506,11 @@ const handlers = {
       g.card.querySelector(".mode").textContent = ev.mode;
       g.card.querySelector(".think").textContent = ev.thinking;
       g.card.querySelector(".result").textContent = ev.result;
-      g.card.querySelector("details").open = false;
     });
   },
   editor_done: ev => {
     const card = stageSection("editor").querySelector(".card.editor") || editorCard();
     scheduleDone("final/interior-editor", () => {
-      card.querySelector("details.th").open = false;
       card.querySelector(".surface").textContent = ev.bwo;
       card.querySelector(".reply").textContent = ev.response;
       card.querySelector(".just").textContent = ev.justification || "(none)";
@@ -414,28 +522,24 @@ const handlers = {
   },
   fit_round: ev => {
     const r = armorRound(ev.round);
-    if (r.live) r.live.remove(), r.live = null;
+    fitDetails(r).textContent = ev.explanation;
     const v = el("div", "", r.box);
     el("span", "verdict " + (ev.fits ? "ok" : "no"), v,
       ev.fits ? "✓ fits the conversation" : "✗ does not fit");
-    const d = el("details", "compact", v);
-    el("summary", "", d, "reader's explanation");
-    el("div", "stream", d, ev.explanation);
   },
   turn_done: ev => {
-    const s = el("section", "stage", pipe);
+    const s = el("section", "stage", turnPanel);
     el("h2", "", s, "The reply");
-    el("div", "sub", s, "What the persona says.");
-    el("div", "", s, "").id = "finalreply";
-    $("#finalreply").textContent = ev.response;
+    el("div", "sub", s, "Final response.");
+    el("div", "finalreply", s, ev.response);
     addMsg("persona", ev.response);
-    document.body.classList.add("done-dim");
+    turnPanel.classList.add("done-dim");
     setBusy(false); setStatus("");
     followPipe();
   },
   turn_error: ev => {
-    el("div", "err", pipe, "turn failed: " + ev.error);
-    setBusy(false); setStatus("error — see right pane");
+    el("div", "err", turnPanel || pipe, "Turn failed: " + ev.error);
+    setBusy(false); setStatus("Error. See the right pane.");
   },
   trace_saved: () => loadTraces(),
 };
@@ -445,7 +549,7 @@ function editorCard(){
   const card = el("div", "card editor", s);
   el("h3", "", card, "interior editor");
   const det = el("details", "compact th", card);
-  el("summary", "", det, "internal reasoning");
+  el("summary", "", det, "Analysis");
   det.open = true;
   el("div", "stream think", det);
   el("div", "note", card, "inner state (BwO), after this moment:");
@@ -453,10 +557,10 @@ function editorCard(){
   el("div", "note", card, "draft reply:");
   el("div", "panel reply", card);
   const jd = el("details", "compact", card);
-  el("summary", "", jd, "why this reply — grounded in the inner state");
+  el("summary", "", jd, "Why this reply");
   el("div", "stream just", jd);
   const edd = el("details", "compact", card);
-  el("summary", "", edd, "what changed on the inner state");
+  el("summary", "", edd, "State changes");
   el("div", "editlist", edd);
   return card;
 }
@@ -468,9 +572,18 @@ function armorRound(n){
   const s = stageSection("armor");
   const box = el("div", "card", s);
   el("h3", "", box, "attempt " + n);
+  el("div", "phase-label", box, "Reply");
   const cand = el("div", "panel reply stream", box);
-  armorRounds[n] = {box, cand, live: null};
+  armorRounds[n] = {box, cand, review: null};
   return armorRounds[n];
+}
+function fitDetails(round){
+  if (!round.review){
+    const details = el("details", "compact", round.box);
+    el("summary", "", details, "Fit review"); details.open = true;
+    round.review = el("div", "stream review", details);
+  }
+  return round.review;
 }
 function route(id){
   const buf = txt(id);
@@ -501,9 +614,8 @@ function route(id){
   if (id.startsWith("final/fit-check")){
     const n = +(/fit-check-(\d+)/.exec(id) || [0, 1])[1];
     const r = armorRounds[n]; if (!r) return;
-    if (!r.live) r.live = el("div", "note stream", r.box);
     const ex = jsonField(buf, "explanation");
-    if (ex !== null) r.live.textContent = "reader: " + ex;
+    if (ex !== null) fitDetails(r).textContent = ex;
     return;
   }
   if (id.startsWith("final/redraft")){
@@ -511,17 +623,33 @@ function route(id){
     const r = armorRounds[n]; if (!r) return;
     if (!r.redraft){
       el("div", "note", r.box, "redraft:");
-      r.redraft = el("div", "panel stream", r.box);
+      r.redraft = el("div", "panel stream redraft", r.box);
     }
     r.redraft.textContent = buf;
   }
 }
 
+globalThis.personaReplayView = {
+  paused: false,
+  emit: receiveEvent,
+  clear: () => { clearAll(); setBusy(false); },
+  whenIdle,
+  showTurn,
+  addMessage: addMsg,
+  setStatus,
+  setName: name => {
+    personaName = name.charAt(0).toUpperCase() + name.slice(1);
+    $("#pname").textContent = personaName;
+    $("#modelInfo").textContent = "Astra";
+    document.title = personaName + " · Conversation replay";
+  },
+};
+
 // ---- wiring ----
 const es = new EventSource("/events");
 es.onmessage = e => {
   const ev = JSON.parse(e.data);
-  (handlers[ev.type] || (() => {}))(ev);
+  receiveEvent(ev);
 };
 fetch("/info").then(r => r.json()).then(i => {
   personaName = i.persona.charAt(0).toUpperCase() + i.persona.slice(1);
@@ -530,7 +658,7 @@ fetch("/info").then(r => r.json()).then(i => {
   document.title = personaName + " · Conversation";
   $("#modelInfo").textContent = i.models
     ? [...new Set(Object.values(i.models))].map(model => model === "gpt-6-astra" ? "Astra" : model).join(" / ") : "";
-  setBusy(i.busy);
+  setBusy(i.busy || !playbackIdle());
 });
 function loadTraces(){
   fetch("/traces").then(r => r.json()).then(t => {
