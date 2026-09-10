@@ -624,7 +624,7 @@ turn's currents layer onto what stands; keep the standing surface's images \
 and grounds where they still hold. A surface that shares nothing with its \
 previous version is a failure of continuity — an interior does not start \
 over each time someone speaks. No speaking voice governs it — write the \
-weather, not a speaker. Three laws:
+weather, not a speaker. The surface follows these principles:
 - The surface RESPONDS; it does not analyze. What the other person said \
 enters only as its effect — what it opened, closed, quickened, stilled — \
 never as text under interpretation. No quoting their lines, no weighing \
@@ -637,13 +637,23 @@ Register how near or far they feel now, and which way that moved.
 - The surface must read COLD. Next turn it is the only interior there is: \
 keep its own concrete anchors inside it (the place, the objects, the \
 stranger); establish everything a later turn will need.
-- The surface has no thesis — it is a surface, not an argument — but it \
-must be GRASPABLE. It is trying to say things without concluding them: \
-each current should end in a handhold a reply could take hold of — a fact \
-registered sharp, a pull with a nameable direction, a retort held unsaid, \
-an image with an edge. Atmosphere that touches nothing, that could tint \
-any conversation equally, is dead surface. If a paragraph leaves nothing \
-speech could pick up and use, it has not earned its place.
+- The surface has no thesis, but it must be GRASPABLE. Keep the prose \
+open, but make its movements particular. Preserve what is distinctive in \
+the syntheses as they change the surface. A pull, interruption, or \
+connection should retain enough detail to distinguish it from another. \
+Let concrete things remain where they carry that difference. Uncertainty \
+can stay unresolved while the things in tension stay clear. Familiar \
+patterns may return with a changed pace, direction, or strength; their \
+images need not stay the same. Leave speech something specific to take \
+hold of.
+
+The edited surface should let a reader work back toward the syntheses \
+that shaped it. Their particular tensions, connections, and shifts should \
+remain discernible from the BwO alone. The reader need not reconstruct \
+the original wording or arrive at a single interpretation. But the prose \
+should provide enough specific detail to support that backward reading. \
+Let the syntheses become implicit in the surface without losing what \
+made their contributions distinct.
 
 3. edits — one note per substantive change to the surface, naming which \
 input drove it: a group label exactly as given ("Group 2"), "what the \
